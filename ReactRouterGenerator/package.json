@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "description": "Simple generator to automate creation of react-router-v6 routes, data loaders, and components",
   "bin": {
-    "route-generator": "./bin/cli.js"
+    "route-generator": "bin/cli.js"
   },
   "scripts": {
-    "start": "node ./bin/cli.js",
+    "start": "node bin/cli.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-   "keywords": [
+  "keywords": [
     "cli",
     "route-generator",
     "react-router",
@@ -18,6 +18,8 @@
   "author": "ejoshi@roambee.com",
   "license": "ISC",
   "dependencies": {
-    "commander": "^12.0.0"
+    "commander": "^12.0.0",
+    "fs-extra": "^11.2.0",
+    "inquirer": "^9.2.17"
   }
 }
