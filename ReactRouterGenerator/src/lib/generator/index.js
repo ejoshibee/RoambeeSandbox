@@ -8,6 +8,7 @@ const generatePage = async (name) => {
   try {
     await fs.ensureDir(dirPath);
     await fs.writeFile(filePath, pageTemplate(name));
+    console.log('test console.log')
     console.log(`Page ${name} generated successfully.`);
   } catch (error) {
     console.error(`Error generating page ${name}:`, error);
