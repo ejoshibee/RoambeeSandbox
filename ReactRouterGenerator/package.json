@@ -1,0 +1,14 @@
+{
+  "name": "reactroutergenerator",
+  "version": "1.0.0",
+  "description": "Simple generator to automate creation of react-router-v6 routes, data loaders, and components",
+  "main": "gen.ts",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "ejoshi@roambee.com",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^12.0.0"
+  }
+}
