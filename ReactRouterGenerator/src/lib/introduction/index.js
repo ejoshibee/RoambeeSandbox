@@ -2,6 +2,7 @@ import inquirer from 'inquirer';
 import fs from 'fs';
 import path from 'path';
 import {parsePackageJson} from '../parsePkgJsn.js'
+import { logger } from '../logger.js'
 
 /**
  * the introduction command will throw the introduction to the console
@@ -21,19 +22,33 @@ export const promptIntroduction = () => {
         // need to check if their project is even setup for react-router and if it is, then we can ask the user if they want to generate routes
       // parse the package json file and store as a JSON object
       const packageJson = parsePackageJson()
+      logger.info('🚀 ~ promptIntroduction ~ packageJson:', packageJson)
+
+      // check for presence of react-router in dependencies or dev-dependencies
+      const hasReactRouter = packageJson.dependencies['react-router-dom'] || packageJson.devDependencies['react-router-dom'];
+
+      // truthy or false value
+      if(!hasReactRouter) {
+        logger.error('\nReact Router is not installed. Please install it to generate routes.')
+        process.exit()
+      }
+
+
+
         // if it is not, then we need to inform the user they are missing dependencies and ask them if they want to install them
       // check dependencies and dev dependencies for react-router
-      const hasReactRouter = packageJson.dependencies['react-router'] || packageJson.devDependencies['react-router'];
       
 
       // Call function that defines the prompts generation
       promptRouteGeneration();
     } else {
-      console.log("Route generation cancelled.");
+      logger.error("Route generation cancelled.");
       process.exit();
     }
   });
 }
+
+
 
 const promptRouteGeneration = async () => {
   const answers = await inquirer.prompt([
@@ -65,11 +80,11 @@ const promptRouteGeneration = async () => {
   ]);
 
   // check answers here
-  console.log(answers)
+    logger.info(answers)
     const { hasPagesFolder, serviceName, apiPath, pageType } = answers;
 
     if(!hasPagesFolder) {
-      console.log('\nNo Pages folder found. Will create one for you')
+      logger.info('\nNo Pages folder found. Will create one for you')
 
       const {generationType} = await inquirer.prompt([
         {
@@ -81,8 +96,7 @@ const promptRouteGeneration = async () => {
       ])
       // call function to create a folder based on the generationType
       createFolder(generationType)
-      console.log(`\n${generationType} folder created for you`)
-
+      logger.success(`\n${generationType} folder created for you`)
     }
 
     // pages/routes folder has been created. Now we need to create the service/page

@@ -1,7 +1,9 @@
 /**
  * Module to parse package.json file and return an object with the parsed data.
- * @module parsePackageJson
+ * 
  */
+
+import { logger } from "./logger.js"
 
 // const fs = require('fs-extra')
 import fs from 'fs-extra'
@@ -14,11 +16,12 @@ export const parsePackageJson = () => {
     // use fs to read the package.json file
     const pkgJsn = fs.readJSONSync(path.join(process.cwd(), 'package.json'), 'utf8')
     // parse the json
-    console.log('🚀 ~ parsePackageJson ~ pkgJsn:', pkgJsn)
+    
+    logger.info('🚀 ~ parsed json here', pkgJsn)
 
     // console.log('🚀 ~ parsePackageJson ~ pkgObj:', JSON.stringify(pkgObj, null, 2))
     // return the parsed json
-    // return pkgObj
+    return pkgJsn
 }
 
 
