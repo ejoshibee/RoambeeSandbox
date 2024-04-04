@@ -2,6 +2,7 @@
   "name": "reactroutergenerator",
   "version": "1.0.0",
   "description": "Simple generator to automate creation of react-router-v6 routes, data loaders, and components",
+  "type": "module",
   "bin": {
     "route-generator": "bin/cli.js"
   },
@@ -21,5 +22,8 @@
     "commander": "^12.0.0",
     "fs-extra": "^11.2.0",
     "inquirer": "^9.2.17"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
   }
 }

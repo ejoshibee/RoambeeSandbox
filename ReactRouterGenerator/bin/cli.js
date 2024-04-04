@@ -1,7 +1,7 @@
 #!/usr/bin/env node
+import { init } from '../src/commands/introduction.js'
 
-const { program } = require('commander');
-const { generate } = require('../src/commands');
+import { program } from 'commander';
 
 program
   .name("route-generator")
@@ -9,8 +9,8 @@ program
   .version("1.0.0");
 
 program
-  .command('generate <name>')
+  .command('init')
   .description('Generate a new route and page')
-  .action(generate);
+  .action(init);
 
 program.parse(process.argv);

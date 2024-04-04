@@ -1,8 +1,8 @@
-const { generatePage } = require('../lib/generator');
+import { generatePage } from '../lib/generator'
 
-const generate = (name) => {
+export const generate = (name) => {
   console.log(`Generating new page: ${name}`);
   generatePage(name);
 };
 
-module.exports = generate;
+
