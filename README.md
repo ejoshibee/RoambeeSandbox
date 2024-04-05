@@ -20,7 +20,7 @@ Navigate to the sandbox directory
 ```bash
 cd Sandbox
 ```
-Navigate to the project of choice (replace <sandbox-project-name> with the name of the project you want to work on)
+Navigate to the project of choice (replace ```<sandbox-project-name>``` with the name of the project you want to work on)
 
 ```bash
 cd <sandbox-project-name>
