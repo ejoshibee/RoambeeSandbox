@@ -1,16 +1,16 @@
 import chalk from "chalk"
 
 export const logger = {
-  error(...args) {
+  error(...args: unknown[]) {
     console.log(chalk.red(...args))
   },
-  warn(...args) {
+  warn(...args: unknown[]) {
     console.log(chalk.yellow(...args))
   },
-  info(...args) {
+  info(...args: unknown[]) {
     console.log(chalk.cyan(...args))
   },
-  success(...args) {
+  success(...args: unknown[]) {
     console.log(chalk.green(...args))
   },
   break() {

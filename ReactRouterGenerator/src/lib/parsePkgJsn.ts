@@ -3,7 +3,7 @@
  * 
  */
 
-import { logger } from "./logger.js"
+import { logger } from "./logger"
 
 // const fs = require('fs-extra')
 import fs from 'fs-extra'

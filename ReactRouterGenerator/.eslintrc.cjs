@@ -1,10 +1,9 @@
 module.exports = {
     "env": {
-        "commonjs": true,
         "es2021": true,
         "node": true
     },
-    "extends": "eslint:recommended",
+    "extends": "standard-with-typescript",
     "overrides": [
         {
             "env": {
@@ -19,6 +18,7 @@ module.exports = {
         }
     ],
     "parserOptions": {
+        "ecmaVersion": "latest",
         "sourceType": "module"
     },
     "rules": {

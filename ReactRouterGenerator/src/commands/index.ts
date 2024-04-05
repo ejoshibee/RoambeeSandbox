@@ -5,8 +5,8 @@
 // const generate = require('./generate');
 // const init = require('./introduction');
 
-import generate from './generate'
-import init from './introduction'
+import { generate } from './generate.ts'
+import { init } from './introduction.ts'
 
 export {
   generate,

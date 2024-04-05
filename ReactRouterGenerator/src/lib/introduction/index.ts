@@ -1,8 +1,8 @@
 import inquirer from 'inquirer';
 import fs from 'fs';
 import path from 'path';
-import {parsePackageJson} from '../parsePkgJsn.js'
-import { logger } from '../logger.js'
+import {parsePackageJson} from '../parsePkgJsn.ts'
+import { logger } from '../logger.ts'
 
 /**
  * the introduction command will throw the introduction to the console
@@ -30,7 +30,7 @@ export const promptIntroduction = () => {
       // truthy or false value
       if(!hasReactRouter) {
         logger.error('\nReact Router is not installed. Please install it to generate routes.')
-        process.exit()
+        // process.exit()
       }
 
 
@@ -49,7 +49,9 @@ export const promptIntroduction = () => {
 }
 
 
-
+/**
+ * Main function to prompt the user for the route generation and handle logical flow
+ */
 const promptRouteGeneration = async () => {
   const answers = await inquirer.prompt([
     {
@@ -96,7 +98,7 @@ const promptRouteGeneration = async () => {
       ])
       // call function to create a folder based on the generationType
       createFolder(generationType)
-      logger.success(`\n${generationType} folder created for you`)
+      logger.success(`\n${generationType} folder created for you\n`)
     }
 
     // pages/routes folder has been created. Now we need to create the service/page
@@ -105,12 +107,13 @@ const promptRouteGeneration = async () => {
 
 
   
-const createFolder = (generationType) => {
+const createFolder = (generationType: string) => {
   // need to check my working directory correct? make sure I am not in the wrong folder
   const pwd = process.cwd();
   let targetDir = pwd;
 
   // Check for the presence of 'src' or 'app' directory inside the working directory
+  // TODO: Abstract this loop away with the pwd declaration above to have a reusable sourceDirectory finder
   const preferredDirs = ['src', 'app'];
   for (const dir of preferredDirs) {
     if (fs.existsSync(path.join(pwd, dir))) {
