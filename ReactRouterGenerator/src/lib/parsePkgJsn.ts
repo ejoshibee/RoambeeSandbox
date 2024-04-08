@@ -1,25 +1,18 @@
-/**
- * Module to parse package.json file and return an object with the parsed data.
- */
-
 import { type PackageJson } from 'type-fest'
-import { logger } from './logger.ts'
-
-// const fs = require('fs-extra')
+// import { logger } from './logger.ts'
 import fs from 'fs-extra'
-// const path = require('path')
 import path from 'path'
 
-export const parsePackageJson = (): PackageJson => {
-  // a function to parse package json for a specific package or packages
-  // the function should take in a package name and return the parsed json
+/**
+ * Parses the package.json file and returns the parsed json as a typed object.
+ * @returns {PackageJson | null} The parsed json or null if the file is not found.
+ */
+export const parsePackageJson = (): PackageJson | null => {
   // use fs to read the package.json file
-  const pkgJsn = fs.readJSONSync(path.join(process.cwd(), 'package.json'), 'utf8') as PackageJson
-  // parse the json
+  const pkgJsn = fs.readJSONSync(path.join(process.cwd(), 'package.json'), 'utf8')
 
-  logger.info('🚀 ~ parsed json here', pkgJsn)
+  // logger.info('🚀 ~ parsed json here', pkgJsn)
 
   // console.log('🚀 ~ parsePackageJson ~ pkgObj:', JSON.stringify(pkgObj, null, 2))
-  // return the parsed json
-  return pkgJsn
+  return pkgJsn ?? null
 }

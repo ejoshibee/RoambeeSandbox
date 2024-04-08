@@ -1,8 +1,5 @@
 import { promptIntroduction } from '../lib/introduction/index.ts'
 
-export const init = async () => {
-  promptIntroduction()
-};
-
-
-
+export const init = async (): Promise<void> => {
+  await promptIntroduction()
+}
