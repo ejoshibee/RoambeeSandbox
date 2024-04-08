@@ -4,6 +4,7 @@ import { type TemplateType, pageTemplate } from './templates/pageTemplates.ts'
 import { logger } from '../logger.ts'
 import inquirer from 'inquirer'
 import { detectSourceDirectory } from '../srcDirFinder.ts'
+import { detectTypeScriptPreferences } from '../tsPrefFinder.ts'
 
 interface Answers {
   serviceName: string
@@ -51,11 +52,7 @@ export const promptRouteGeneration = async (): Promise<void> => {
 
   // TODO: create the page IN THE CORRECT DIRECTORY
 
-  // do a check for a tsconfig. this will be to determine if the user is using typescript or not
-  const isTs = checkForTsConfig()
-
-  // if they are, we will need to generate the page with a .tsx extension as opposed to .jsx
-  await generatePage(serviceName, folderName, pageType, isTs)
+  await generatePage(serviceName, folderName, pageType)
 }
 
 /**
@@ -65,14 +62,19 @@ export const promptRouteGeneration = async (): Promise<void> => {
  * @param {TemplateType} type The type of page to be generated (TODO: create these types)
  * @param {boolean} isTs Bool representing whether the user is using typescript or not.
  */
-export const generatePage = async (name: string, routeFolder: string, type: TemplateType, isTs: boolean): Promise<void> => {
+export const generatePage = async (name: string, routeFolder: string, type: TemplateType): Promise<void> => {
+  const { prefersTsx } = await detectTypeScriptPreferences()
+
   // create the path to the pages/routes directory
   const src = await detectSourceDirectory()
   logger.info(`src folder is: ${src}`)
   const dirPath = path.join(process.cwd(), `${src}/${routeFolder}`)
 
+  // create a file name
+  const fileName = `${name}.${prefersTsx ? 'tsx' : 'jsx'}`
+
   // create the path to the new file
-  const filePath = path.join(dirPath, `${name}.${isTs ? 'tsx' : 'jsx'}`)
+  const filePath = path.join(dirPath, fileName)
 
   try {
     // check if the src/`routeFolder` page exists
@@ -87,7 +89,7 @@ export const generatePage = async (name: string, routeFolder: string, type: Temp
         {
           type: 'confirm',
           name: 'overwrite',
-          message: `The file ${name}.${isTs ? 'tsx' : 'jsx'} already exists. Do you want to overwrite it?`,
+          message: `The file ${fileName} already exists. Do you want to overwrite it?`,
           default: false
         }
       ])
@@ -99,7 +101,7 @@ export const generatePage = async (name: string, routeFolder: string, type: Temp
       }
       // logger confirmation that an overwrite is happening
       // only triggered when an overwrite happens
-      logger.info(`Overwriting ${name}.${isTs ? 'tsx' : 'jsx'}`)
+      logger.info(`Overwriting file ${fileName}`)
     }
 
     // write the file to the path
@@ -107,6 +109,7 @@ export const generatePage = async (name: string, routeFolder: string, type: Temp
     logger.break()
     logger.success(`Page ${name} generated successfully.`)
   } catch (error) {
+    logger.break()
     logger.error(`Error generating page ${name}:`, error)
   }
 }
