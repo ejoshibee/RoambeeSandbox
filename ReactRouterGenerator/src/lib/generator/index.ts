@@ -71,7 +71,8 @@ export const generatePage = async (name: string, routeFolder: string, type: Temp
   const dirPath = path.join(process.cwd(), `${src}/${routeFolder}`)
 
   // create a file name
-  const fileName = `${name}.${prefersTsx ? 'tsx' : 'jsx'}`
+  const extension = prefersTsx ? 'tsx' : 'jsx'
+  const fileName = `${name}.${extension}`
 
   // create the path to the new file
   const filePath = path.join(dirPath, fileName)

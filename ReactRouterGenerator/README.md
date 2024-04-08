@@ -10,7 +10,7 @@ This CLI tool is designed to expedite the creation of routes and pages for React
 - **Testing and Error Handling:** Implement robust testing and error handling mechanisms.
 - **DONE More Informative Prompts and Validation:** For the folderName prompt, add validation to ensure the name provided doesn't include forbidden characters for file paths. For apiPath, ensure the input is a valid path format.
 - **DONE Dynamic Source Directory:** Allow users to specify or auto-detect the source directory instead of hardcoding `src/${routeFolder}`, making the tool more flexible for projects with different structures.
-- **Enhanced TypeScript Detection:** Extend TypeScript detection to handle JSX vs TSX and JS vs TS for projects that use JavaScript but want TSX components or vice versa.
+- **DONE Enhanced TypeScript Detection:** Extend TypeScript detection to handle JSX vs TSX and JS vs TS for projects that use JavaScript but want TSX components or vice versa.
 - **DONE Confirmation Before File Creation:** Prompt the user for confirmation to overwrite an existing file before creating a new page file, preventing accidental loss of work.
 - **Template Customization:** Allow users to customize or define their templates in a configuration file, making the tool adaptable to various coding styles and requirements.
 - **Support for Nested Directories:** Enhance folder creation logic to support nested directories, allowing for more granular organization of files (e.g., routes/admin/users).

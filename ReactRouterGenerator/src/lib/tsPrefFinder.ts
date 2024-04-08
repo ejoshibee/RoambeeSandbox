@@ -11,7 +11,7 @@ import { logger } from './logger.ts'
 export const detectTypeScriptPreferences = async (): Promise<{ usesTs: boolean, prefersTsx: boolean }> => {
   const tsConfigPath = path.join(process.cwd(), 'tsconfig.json')
   let usesTs = false
-  let prefersTsx = false
+  let prefersTsx = true
 
   // Check for tsconfig.json to determine if it's a TypeScript project
   if (fs.existsSync(tsConfigPath)) {
