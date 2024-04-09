@@ -46,7 +46,6 @@ $ route-generator init
 # Your pages folder and basic page structure will now be generated
 ```
 
-
 ## Contribution:
 
 Contributions are welcome! Feel free to submit issues or pull requests on the GitHub repository.
