@@ -1,15 +1,26 @@
 #!/usr/bin/env node
 import { init } from './commands/introduction.ts'
 import { generate } from './commands/generate.ts'
-import { program } from 'commander'
+import { Command } from 'commander'
+import { parsePackageJson } from './lib/parsePkgJsn.ts'
 
 process.on('SIGINT', () => process.exit(0))
 process.on('SIGTERM', () => process.exit(0))
 
-program
-  .name('route-generator')
-  .description('A CLI tool to automate route and page generation for React projects.')
-  .version('1.0.0')
+const main = async (): Promise<void> => {
+  const packageInfo = parsePackageJson()
 
-program.addCommand(generate).addCommand(init)
-program.parse(process.argv)
+  const program = new Command()
+    .name('route-generator')
+    .description('A CLI tool to automate route and page generation for React projects.')
+    .version(packageInfo?.version ?? '1.0.0',
+      '-v, --version',
+      'display the version number'
+    )
+
+  program.addCommand(generate).addCommand(init)
+
+  program.parse()
+}
+
+await main()
