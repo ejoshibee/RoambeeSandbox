@@ -69,17 +69,18 @@ export const promptIntroduction = async (): Promise<void> => {
         type: 'confirm',
         name: 'generateRoutes',
         message: 'Want to generate routes?',
-        default: false
+        default: true
       }
     ])
 
     if (!generateRoutes) {
       logger.error('Route generation cancelled.')
+      logger.break()
       process.exit()
     }
 
     const packageJson: PackageJson | null = parsePackageJson()
-    logger.info('🚀 ~ promptIntroduction ~ packageJson:', packageJson)
+    // logger.info('🚀 ~ promptIntroduction ~ packageJson:', packageJson)
 
     if (packageJson === null) {
       logger.error('No package.json found. Ensure you are in the root directory of your React project.')
@@ -90,6 +91,7 @@ export const promptIntroduction = async (): Promise<void> => {
 
     if (!hasReactRouter) {
       logger.error('React Router is not installed.')
+      logger.break()
       const { installReactRouter } = await inquirer.prompt([
         {
           type: 'confirm',
@@ -103,6 +105,7 @@ export const promptIntroduction = async (): Promise<void> => {
         await downloadPackage('react-router-dom')
       } else {
         logger.error('Cannot proceed without React Router. Exiting...')
+        logger.break()
         // uncomment when testing prod
         // process.exit(1)
       }
@@ -129,15 +132,15 @@ const promptRouteGeneration = async (): Promise<void> => {
     }
   ])
 
-  logger.info(answers)
+  // logger.info(answers)
 
   // check answers here
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { hasPagesFolder, serviceName, apiPath } = answers
 
   if (hasPagesFolder === false) {
-    logger.break()
     logger.info('Confirming no routes or pages folder.')
+    logger.break()
 
     const { generationType }: { generationType: 'routes' | 'pages' } = await inquirer.prompt([
       {
@@ -181,7 +184,7 @@ const createFolder = async (generationType: 'routes' | 'pages'): Promise<void> =
   const generationPath = path.join(targetDir, generationType)
   fs.mkdirSync(generationPath, { recursive: true })
   logger.break()
-  logger.success(`🚀 ~ ${generationType} folder created at: ${generationPath}`)
+  logger.success(`${generationType} folder created at: ${generationPath}`)
 }
 
 /**

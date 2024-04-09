@@ -5,29 +5,43 @@ import { logger } from '../logger.ts'
 import inquirer from 'inquirer'
 import { detectSourceDirectory } from '../srcDirFinder.ts'
 import { detectTypeScriptPreferences } from '../tsPrefFinder.ts'
+import chalk from 'chalk'
 
 interface Answers {
-  serviceName: string
+  pageName: string
   apiPath: string
   pageType: TemplateType
-  folderName: string
+  // folderName: string
 }
 
 export const promptRouteGeneration = async (): Promise<void> => {
-  const answers = await inquirer.prompt(
-    [{
+  const { folderName }: { folderName: string } = await inquirer.prompt([
+    {
       type: 'input',
       name: 'folderName',
       message: 'Enter the name of your pages/routes folder:',
       default: 'routes',
       validate: (input: string) => /^[a-zA-Z0-9_-]+$/.test(input) || 'Folder name contains invalid characters'
+    }
+  ])
 
-    },
-    {
+  const pathToFolder = path.join(process.cwd(), `src/${folderName}`)
+  // check that correct folder exists under src
+  if (!fs.existsSync(pathToFolder)) {
+    logger.info(`Path to folder: ${pathToFolder}`)
+    logger.break()
+    logger.warn(`Routes folder with name ${folderName} does not exist! Run the ${chalk.cyan('init')} command or create your folder`)
+    logger.break()
+    // TODO: prompt user run the init command
+    process.exit(1)
+  }
+
+  const answers = await inquirer.prompt(
+    [{
       type: 'input',
-      name: 'serviceName',
-      message: 'Name of the Service/Page:',
-      validate: (input: string) => input !== '' || 'Service/Page name is required'
+      name: 'pageName',
+      message: 'Name of the new page:',
+      validate: (input: string) => input !== '' || 'Page name is required'
     },
     {
       type: 'input',
@@ -43,16 +57,23 @@ export const promptRouteGeneration = async (): Promise<void> => {
       default: 'withLoader'
     }]
   )
-  const { serviceName, apiPath, pageType, folderName }: Answers = answers
-  logger.info(`Service Name: ${serviceName}`)
+  const { pageName, apiPath, pageType }: Answers = answers
+  logger.info(`Page Name: ${pageName}`)
   logger.info(`API Path: ${apiPath}`)
   logger.info(`Page Type: ${pageType}`)
-  logger.info(`Folder Name: ${folderName}`)
+  // logger.info(`Folder Name: ${folderName}`)
   logger.break()
 
   // TODO: create the page IN THE CORRECT DIRECTORY
 
-  await generatePage(serviceName, folderName, pageType)
+  // sanitize the apiPath and the serviceName
+  // capitalize the first char in the page name
+  const sanitizedPageName = pageName[0].toUpperCase() + pageName.slice(1)
+
+  // if present, remove the leading forward slash
+  const sanitizedApiPath = apiPath[0] === '/' ? apiPath.slice(1) : `${apiPath}`
+
+  await generatePage(sanitizedPageName, folderName, pageType, sanitizedApiPath)
 }
 
 /**
@@ -62,7 +83,7 @@ export const promptRouteGeneration = async (): Promise<void> => {
  * @param {TemplateType} type The type of page to be generated (TODO: create these types)
  * @param {boolean} isTs Bool representing whether the user is using typescript or not.
  */
-export const generatePage = async (name: string, routeFolder: string, type: TemplateType): Promise<void> => {
+export const generatePage = async (name: string, routeFolder: string, type: TemplateType, apiPath: string): Promise<void> => {
   const { prefersTsx } = await detectTypeScriptPreferences()
 
   // create the path to the pages/routes directory
@@ -106,7 +127,7 @@ export const generatePage = async (name: string, routeFolder: string, type: Temp
     }
 
     // write the file to the path
-    await fs.writeFile(filePath, pageTemplate(name, type))
+    await fs.writeFile(filePath, pageTemplate(name, type, apiPath))
     logger.break()
     logger.success(`Page ${name} generated successfully.`)
   } catch (error) {

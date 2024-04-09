@@ -51,4 +51,15 @@ $ route-generator init
 
 Contributions are welcome! Feel free to submit issues or pull requests on the GitHub repository.
 
+To locally develop on this tool, fork this repository and run the following commands
+
+```bash
+git clone https://github.com/your-profile/fork-ReactRouterGenerator.git
+cd ReactRouterGenerator
+npm install
+npm link
+```
+
+- Following the npm link, you can now use the `route-generator` command in your terminal
+
 > Note: This tool is in its early stages of development. While it offers basic functionality, it may not yet cover all possible use cases.

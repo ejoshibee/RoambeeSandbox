@@ -3,6 +3,7 @@ import path from 'path'
 import inquirer from 'inquirer'
 import { parsePackageJson } from './parsePkgJsn.ts'
 import { logger } from './logger.ts'
+import stripJsonComments from 'strip-json-comments'
 
 /**
  * Attempts to detect TypeScript usage and preferences in the project.
@@ -10,6 +11,7 @@ import { logger } from './logger.ts'
  */
 export const detectTypeScriptPreferences = async (): Promise<{ usesTs: boolean, prefersTsx: boolean }> => {
   const tsConfigPath = path.join(process.cwd(), 'tsconfig.json')
+  logger.info('🚀 ~ detectTypeScriptPreferences ~ tsConfigPath:', tsConfigPath)
   let usesTs = false
   let prefersTsx = true
 
@@ -19,8 +21,11 @@ export const detectTypeScriptPreferences = async (): Promise<{ usesTs: boolean, 
     logger.info('TypeScript project detected.')
 
     // Parse tsconfig.json to check for TSX preference
-    const tsConfig = fs.readJsonSync(tsConfigPath)
-    prefersTsx = tsConfig.compilerOptions?.jsx !== undefined
+    // This errors because readJsonSync is reading a json file, but json files do not support comments, per se
+    const tsConfig = fs.readFileSync(tsConfigPath, 'utf8')
+    const tsConfigJson = JSON.parse(stripJsonComments(tsConfig))
+    // logger.info('tsConfig', tsConfigJson)
+    prefersTsx = tsConfigJson.compilerOptions?.jsx !== undefined
   } else {
     // Fallback or additional checks, e.g., parsing package.json or existing file extensions
     const packageJson = parsePackageJson()
