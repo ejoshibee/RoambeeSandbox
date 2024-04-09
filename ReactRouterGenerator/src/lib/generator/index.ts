@@ -11,6 +11,7 @@ interface Answers {
   pageName: string
   apiPath: string
   pageType: TemplateType
+  experimentalGeneration: boolean
   // folderName: string
 }
 
@@ -55,9 +56,18 @@ export const promptRouteGeneration = async (): Promise<void> => {
       message: 'Type of page:',
       choices: ['withLoader', 'deferredLoader', 'withParams', 'authenticatedRoute', 'lazyLoaded', 'notFound', 'layout'], // Add more types as needed
       default: 'withLoader'
-    }]
+    },
+    {
+      type: 'confirm',
+      name: 'experimentalGeneration',
+      message: `Do you want to modify your routes file ${chalk.underline.bold.red('EXPERIMENTAL')}?`,
+      default: false
+    }
+    ]
   )
-  const { pageName, apiPath, pageType }: Answers = answers
+
+  // extract the answers from the answers object
+  const { pageName, apiPath, pageType, experimentalGeneration }: Answers = answers
   logger.info(`Page Name: ${pageName}`)
   logger.info(`API Path: ${apiPath}`)
   logger.info(`Page Type: ${pageType}`)
@@ -71,9 +81,34 @@ export const promptRouteGeneration = async (): Promise<void> => {
   const sanitizedPageName = pageName[0].toUpperCase() + pageName.slice(1)
 
   // if present, remove the leading forward slash
-  const sanitizedApiPath = apiPath[0] === '/' ? apiPath.slice(1) : `${apiPath}`
+  const sanitizedApiPath = apiPath[0] === '/' ? apiPath.slice(1) : apiPath
 
+  // generate the page as normal, regardless of experimental flag being true or not
   await generatePage(sanitizedPageName, folderName, pageType, sanitizedApiPath)
+
+  // if the experimental flag is true, lets ask for the location of the router obejct to help our traversal.
+  if (experimentalGeneration) {
+    const { routerLocation }: { routerLocation: string } = await inquirer.prompt([{
+      type: 'input',
+      name: 'routerLocation',
+      message: `Where is your router file located? Example: ${chalk.cyan('src/main.tsx')} or ${chalk.cyan('src/routes/router.jsx')}`,
+      default: 'main.tsx'
+      // TODO: validate input
+    }])
+
+    // the router location input is a path name to the router file
+    // we need to traverse the file and add the route to the router object using jscodeshift
+
+    // check that the path is a valid path
+    if (!fs.existsSync(path.join(process.cwd(), routerLocation))) {
+      logger.error(`Router file at ${routerLocation} does not exist!`)
+      logger.break()
+      process.exit(0)
+    }
+
+    // if we've made it here, path is valid to the file containing a router object.
+    // TODO: TRIGGER THE JSCODESHIFT transformation here to modify the router
+  }
 }
 
 /**
