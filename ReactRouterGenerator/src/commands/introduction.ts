@@ -14,7 +14,7 @@ import { Command } from 'commander'
  */
 export const init = new Command()
   .name('init')
-  .description('Initialize the React Router Generator')
+  .description('Initialize the React Router Generator by checking your project for necessary folders/dependencies')
   .action(async () => {
     try {
       const { generateRoutes }: { generateRoutes: boolean } = await inquirer.prompt([
@@ -36,7 +36,7 @@ export const init = new Command()
       // logger.info('🚀 ~ promptIntroduction ~ packageJson:', packageJson)
 
       if (packageJson === null) {
-        logger.error('No package.json found. Ensure you are in the root directory of your React project.')
+        logger.error('No package.json found. Ensure you are in the root directory of your project.')
         process.exit(1)
       }
 

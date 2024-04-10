@@ -1,6 +1,4 @@
 import { type Transform } from 'jscodeshift'
-// import * as path from 'path'
-// import { logger } from './logger.ts'
 
 const transform: Transform = (fileInfo, api) => {
   const j = api.jscodeshift
@@ -18,7 +16,6 @@ const transform: Transform = (fileInfo, api) => {
   // check that routes were found
   if (routes.size() > 0) {
     // Extract the first <Route /> component
-    // logger.info('Found <Route /> components:')
     console.log('Found <Route /> components')
 
     routes.forEach((path, i) => {
@@ -28,10 +25,9 @@ const transform: Transform = (fileInfo, api) => {
     })
 
     // const firstRoute = routes.at(0).nodes()[0]
+
     // Serialize the first <Route /> to a string including formatting
     // const firstRouteStr = j(firstRoute).toSource({ quote: 'single', trailingComma: true })
-
-    // logger.success(`First <Route /> component found: ${firstRouteStr}`)
   } else {
     console.log('No <Route /> components found.')
   }

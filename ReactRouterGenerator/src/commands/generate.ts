@@ -127,7 +127,7 @@ export const generate = new Command()
  * @param {string} name The name of the service/page for the application.
  * @param {string} routeFolder The name of the route folder for the application.
  * @param {TemplateType} type The type of page to be generated (TODO: create these types)
- * @param {boolean} isTs Bool representing whether the user is using typescript or not.
+ * @param {string} apiPath The pathname of the api to be called by the route
  */
 export const generatePage = async (name: string, routeFolder: string, type: TemplateType, apiPath: string): Promise<void> => {
   const { prefersTsx } = await detectTypeScriptPreferences()
