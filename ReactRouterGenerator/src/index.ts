@@ -6,7 +6,7 @@ import { parsePackageJson } from './lib/parsePkgJsn.ts'
 
 process.on('SIGINT', () => process.exit(0))
 process.on('SIGTERM', () => process.exit(0))
-
+console.log('')
 const main = async (): Promise<void> => {
   const packageInfo = parsePackageJson()
 
