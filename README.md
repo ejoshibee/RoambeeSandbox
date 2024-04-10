@@ -8,6 +8,10 @@ Welcome to the Sandbox Mono-Repository! This repository serves as a dynamic play
 
 The `reactRouterGenerator` is a tool designed to streamline the creation of routes and pages for React projects. Leveraging React Router v6.4 and above, it simplifies the development process by generating basic route and page structures, saving time and effort. It's intuitive, ensuring compatibility and easing the development workflow with interactive prompts and automated folder creation.
 
+### Talk To the Bee
+
+The `Talk To the Bee` project is a simple application that provides a chatbot who's context contains the vast wealth of Roambee Confluence documentation. It is in its fledgling stages but is soon to be capable of indexing confluence pages via ChromaDB and an embedding model, leveraging Confluence's api's for efficient document retrieval. 
+
 ## Getting Started
 
 To get started with the Sandbox Mono-Repository, clone the repository to your local machine using:
