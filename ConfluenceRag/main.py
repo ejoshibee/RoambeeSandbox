@@ -64,14 +64,14 @@ def main():
         else:
             print(f"Space with key '{space_key}' does not exist.")
         
-        # loop through first 2 spaces, calling the fetch_pages_for_space function for each space. Passing in the auth, headers, confUrl, and the space_id     
+        # loop through last 4 spaces, calling the fetch_pages_for_space function for each space. Passing in the auth, headers, confUrl, and the space_id     
         for space in list_of_spaces[-4:]:
-            print(f"space is: {space}\n")
+            # print(f"space is: {space}\n")
             space_id = space.get('id')
             # print(f'space_id is: {space_id}')
             try:
                 list_of_pages = get_pages_for_space(confluenceRestUrl, headers, auth, space_id)
-                
+                print(f"list_of_pages length is: {len(list_of_pages)}")
                 # iterate through the list of pages to get text and process
                 for page in list_of_pages:
                     # Process page content
@@ -80,9 +80,9 @@ def main():
                     print(f"Page Title is: {page.get('title')}")
                     print(f"processed_text is: {processed_text}")
                     print("")
-                # Store processed text in confluence_data/ (or use for embedding generation)
-                save_processed_text_to_files(processed_text, space_key, page.get('id'))
-                # ... 
+                    # Store processed text in confluence_data/ (or use for embedding generation)
+                    save_processed_text_to_files(processed_text, space.get('key'), page.get('id'))
+                    # ... 
 
             except Exception as e:
                 print(f"An error occurred while fetching pages for space ID {space_id}: {e}")
