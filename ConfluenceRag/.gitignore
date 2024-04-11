@@ -1,0 +1,4 @@
+.venv
+/confluence_data/*
+/embeddings/*
+.env
