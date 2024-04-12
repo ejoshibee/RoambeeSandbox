@@ -1,0 +1,4 @@
+.venv
+*.cpython-312*
+.env
+
