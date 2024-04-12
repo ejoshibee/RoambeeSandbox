@@ -1,4 +1,6 @@
 .venv
 /confluence_data/*
 /embeddings/*
+*.cpython-312*
 .env
+
