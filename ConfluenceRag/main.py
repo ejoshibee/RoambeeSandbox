@@ -8,52 +8,50 @@ from chatbot.processing import process_page_content, save_processed_text_to_file
 
 load_dotenv()
 
+
 def main():
     username = os.getenv("username")
     confToken = os.getenv("confluenceToken")
     confluenceRestUrl = "https://roambee.atlassian.net/wiki/api/v2"
     auth = HTTPBasicAuth(username, confToken)
-    headers = {
-        "Accept": "application/json"
-    }
-    
+    headers = {"Accept": "application/json"}
+
     try:
         # Fetch a list of spaces
         limit = 250
         spaces_url = f"{confluenceRestUrl}/spaces?limit={limit}"
         list_of_spaces = []
-        
+
         response = requests.get(spaces_url, headers=headers, auth=auth)
         response.raise_for_status()
-        
+
         headers = response.headers
         spaces_data = response.json()
 
         # Add the initial list of spaces to list_of_spaces
-        list_of_spaces.extend(spaces_data['results'])
+        list_of_spaces.extend(spaces_data["results"])
         print(f"list_of_spaces length is: {len(list_of_spaces)}")
-        
-        if 'Link' in headers:
+
+        if "Link" in headers:
             sanitized_link = get_sanitized_next_link(headers)
 
             print(f"Next URL (without overlapping '/wiki'): {sanitized_link}")
-            
-            # Fetch the remaining set of spaces 
+
+            # Fetch the remaining set of spaces
             moreSpaces = requests.get(sanitized_link, headers=headers, auth=auth)
             moreSpaces.raise_for_status()
             moreSpaces = moreSpaces.json()
-            
+
             # Add the additional list of spaces to list_of_spaces
-            list_of_spaces.extend(moreSpaces['results'])
+            list_of_spaces.extend(moreSpaces["results"])
 
         print(f"\nTotal spaces retrieved: {len(list_of_spaces)}")
 
-            
         # Check if a specific space exists
         space_key = "T2BTest"
         index_of_match = None
         for index, space in enumerate(list_of_spaces):
-            if space['key'] == space_key:
+            if space["key"] == space_key:
                 index_of_match = index
                 break
 
@@ -61,14 +59,16 @@ def main():
             print(f"Index of space with key '{space_key}': {index_of_match}")
         else:
             print(f"Space with key '{space_key}' does not exist.")
-        
-        # loop through last 2 spaces, calling the fetch_pages_for_space function for each space. Passing in the auth, headers, confUrl, and the space_id     
+
+        # loop through last 2 spaces, calling the fetch_pages_for_space function for each space. Passing in the auth, headers, confUrl, and the space_id
         for space in list_of_spaces[-2:]:
             # print(f"space is: {space}\n")
-            space_id = space.get('id')
+            space_id = space.get("id")
             # print(f'space_id is: {space_id}')
             try:
-                list_of_pages = get_pages_for_space(confluenceRestUrl, headers, auth, space_id)
+                list_of_pages = get_pages_for_space(
+                    confluenceRestUrl, headers, auth, space_id
+                )
                 print(f"list_of_pages length is: {len(list_of_pages)}")
                 # iterate through the list of pages to get text and process
                 for page in list_of_pages:
@@ -79,18 +79,23 @@ def main():
                     print(f"processed_text is: {processed_text}")
                     print("")
                     # Store processed text in confluence_data/ (or use for embedding generation)
-                    save_processed_text_to_files(processed_text, space.get('key'), page.get('id'))
+                    save_processed_text_to_files(
+                        processed_text, space.get("key"), page.get("id")
+                    )
 
-                    generate_and_store_embeddings(input_dir='data/confluence_data/', output_dir='data/embeddings/')
-                    # ... 
+                    generate_and_store_embeddings(
+                        input_dir="data/confluence_data/", output_dir="data/embeddings/"
+                    )
+                    # ...
 
             except Exception as e:
-                print(f"An error occurred while fetching pages for space ID {space_id}: {e}")
+                print(
+                    f"An error occurred while fetching pages for space ID {space_id}: {e}"
+                )
 
-        
-            
     except requests.exceptions.RequestException as e:
         print(f"An error occurred while fetching spaces: {e}")
+
 
 if __name__ == "__main__":
     main()
