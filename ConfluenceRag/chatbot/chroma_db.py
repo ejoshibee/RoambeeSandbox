@@ -1,9 +1,10 @@
 import chromadb
 
+
 class ChromaDBStore:
     def __init__(self, collection_name: str = "confluence_embeddings"):
-        # Updated client initialization 
-        self.client = chromadb.Client()  
+        # Updated client initialization
+        self.client = chromadb.Client()
         self.collection_name = collection_name
         self._ensure_collection_exists()
 
@@ -11,7 +12,9 @@ class ChromaDBStore:
         if self.collection_name not in self.client.list_collections():
             self.client.create_collection(self.collection_name)
 
-    def add_embeddings(self,id: list, embeddings: list[list[float]], metadatas: list[dict] = None):
+    def add_embeddings(
+        self, id: list, embeddings: list[list[float]], metadatas: list[dict] = None
+    ):
         """
         Adds a batch of embeddings to the Chroma collection.
 
