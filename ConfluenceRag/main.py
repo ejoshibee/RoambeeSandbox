@@ -3,11 +3,10 @@ from dotenv import load_dotenv
 import requests
 from requests.auth import HTTPBasicAuth
 from chatbot.confluence_api import get_pages_for_space, get_sanitized_next_link
+from chatbot.embeddings import generate_and_store_embeddings
 from chatbot.processing import process_page_content, save_processed_text_to_files
 
 load_dotenv()
-
-
 
 def main():
     username = os.getenv("username")
@@ -17,7 +16,6 @@ def main():
     headers = {
         "Accept": "application/json"
     }
-    
     
     try:
         # Fetch a list of spaces
@@ -64,8 +62,8 @@ def main():
         else:
             print(f"Space with key '{space_key}' does not exist.")
         
-        # loop through last 4 spaces, calling the fetch_pages_for_space function for each space. Passing in the auth, headers, confUrl, and the space_id     
-        for space in list_of_spaces[-4:]:
+        # loop through last 2 spaces, calling the fetch_pages_for_space function for each space. Passing in the auth, headers, confUrl, and the space_id     
+        for space in list_of_spaces[-2:]:
             # print(f"space is: {space}\n")
             space_id = space.get('id')
             # print(f'space_id is: {space_id}')
@@ -82,6 +80,8 @@ def main():
                     print("")
                     # Store processed text in confluence_data/ (or use for embedding generation)
                     save_processed_text_to_files(processed_text, space.get('key'), page.get('id'))
+
+                    generate_and_store_embeddings(input_dir='data/confluence_data/', output_dir='data/embeddings/')
                     # ... 
 
             except Exception as e:

@@ -2,6 +2,7 @@ import requests
 from requests.utils import parse_header_links
 import json
 
+
 def get_space_by_key(confluenceRestUrl, headers, auth, space_key):
     """
     Fetches details of a specific space by its key from the Confluence REST API.
@@ -23,16 +24,16 @@ def get_space_by_key(confluenceRestUrl, headers, auth, space_key):
         keys: list[str] = [space_key]
         # Network request to fetch the space details
         response = requests.request(
-            "GET",
-            f"{confluenceRestUrl}/spaces?keys={keys}",
-            headers=headers,
-            auth=auth
+            "GET", f"{confluenceRestUrl}/spaces?keys={keys}", headers=headers, auth=auth
         )
-        print(f"response is: {json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(',', ': '))}")
+        print(
+            f"response is: {json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(',', ': '))}"
+        )
         print("")
         response.raise_for_status()
     except requests.exceptions.RequestException as e:
         print(f"An error occurred while fetching space details: {e}")
+
 
 def get_sanitized_next_link(headers):
     """
@@ -44,7 +45,7 @@ def get_sanitized_next_link(headers):
     Returns:
         str or None: The sanitized 'next' URL if present, otherwise None.
     """
-    header_content = headers['Link']
+    header_content = headers["Link"]
     parsed_links = parse_header_links(header_content)
 
     base_url = ""
@@ -52,26 +53,47 @@ def get_sanitized_next_link(headers):
 
     # Extract the base and next URLs from the parsed links
     for link in parsed_links:
-        url = link['url']
-        rel = link['rel']
+        url = link["url"]
+        rel = link["rel"]
         if rel == "base":
             base_url = url
         elif rel == "next":
             next_url = url
 
     # Remove the overlapping '/wiki' part from the next URL if necessary
-    next_url = next_url.replace('/wiki', '', 1)
-    sanitized_link = base_url.rstrip('/') + next_url
+    next_url = next_url.replace("/wiki", "", 1)
+    sanitized_link = base_url.rstrip("/") + next_url
     return sanitized_link
+
 
 # Define function to fetch all pages for a given space
 def get_pages_for_space(url, headers, auth, space_id) -> list:
+    """
+    Fetches all pages for a given space from the Confluence REST API.
+
+    This function sends a GET request to the Confluence REST API to retrieve all pages
+    associated with a specific space. It expects the response to be in the 'atlas_doc_format',
+    which is a JSON representation of the page content.
+
+    Args:
+        url (str): The base URL of the Confluence REST API.
+        headers (dict): The headers to be sent with the request.
+        auth (tuple): The authentication credentials, typically (username, password).
+        space_id (str): The ID of the space for which to fetch pages.
+
+    Returns:
+        list: A list of dictionaries, each representing a page within the specified space.
+              If an error occurs, an empty list is returned.
+
+    Raises:
+        requests.exceptions.RequestException: If an error occurs during the network request.
+    """
     try:
         # Fetch pages for the given space
         pages_url = f"{url}/spaces/{space_id}/pages?body-format=atlas_doc_format"
         response = requests.get(pages_url, headers=headers, auth=auth)
         response.raise_for_status()
-        
+
         # Parse response JSON
         pages_data = response.json()
         # print(f"pages_data is: {pages_data}")
@@ -80,27 +102,10 @@ def get_pages_for_space(url, headers, auth, space_id) -> list:
         pages = pages_data.get("results", [])
         # print(f"pages is: {pages}")
         return pages
-    
 
-        # # Extract page content and store it in a list or database
-        for page in pages:
-            page_id = page.get("id")
-            page_title = page.get("title")
-            
-            # TODO: FIX PAGE CONTENT PARSING CURRENTLY BROKEN
-            page_content = page.get("body")
-            
-            # Store page details in a list or database
-            # For demonstration, let's print page details
-            print(f"space_id: {space_id}")
-            print(f"Page ID: {page_id}")
-            print(f"Title: {page_title}")
-            print(f"page_content is: {parseADF(page_content)}")
-            # print(f"Content: {page_content}")
-            print("\n")
-        
     except requests.exceptions.RequestException as e:
         print(f"An error occurred while fetching pages for space '{space_id}': {e}")
+
 
 def parseADF(page_content) -> list[str]:
     """
@@ -113,7 +118,7 @@ def parseADF(page_content) -> list[str]:
         list: A list containing all the text objects extracted from the 'atlas_doc_format'.
     """
     # Access the "value" key within "atlas_doc_format"
-    atlas_doc_value = page_content['atlas_doc_format']['value']
+    atlas_doc_value = page_content["atlas_doc_format"]["value"]
 
     # Parse the JSON string within the "value" key
     parsed_atlas_doc = json.loads(atlas_doc_value)
@@ -126,11 +131,11 @@ def parseADF(page_content) -> list[str]:
         # print(f'accessing content: {content}')
         if isinstance(content, dict):
             # print('content is a dict')
-            if content.get('type') == 'text':
+            if content.get("type") == "text":
                 # print(f'content found: {content["text"]}')
-                page_content_body.extend([content['text']])
-            elif content.get('content'):
-                for item in content['content']:
+                page_content_body.extend([content["text"]])
+            elif content.get("content"):
+                for item in content["content"]:
                     extract_text_objects(item)
         elif isinstance(content, list):
             # print('list found')
@@ -138,6 +143,6 @@ def parseADF(page_content) -> list[str]:
                 extract_text_objects(item)
 
     # Extract text objects and store page content in text_object
-    extract_text_objects(parsed_atlas_doc['content'])
+    extract_text_objects(parsed_atlas_doc["content"])
 
     return page_content_body
