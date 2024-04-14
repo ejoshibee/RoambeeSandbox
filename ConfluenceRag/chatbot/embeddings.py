@@ -2,9 +2,9 @@ from transformers import AutoTokenizer, AutoModel
 import torch
 import numpy as np
 import os
-from chatbot.chroma_db import ChromaDBStore  # Import the ChromaDBStore class
+# from chatbot.chroma_db import ChromaDBStore  # Import the ChromaDBStore class
 
-chroma_store = ChromaDBStore()  # Create a ChromaDBStore instance
+# chroma_store = ChromaDBStore()  # Create a ChromaDBStore instance
 
 
 # Load a pre-trained transformer model and tokenizer
@@ -23,8 +23,12 @@ def generate_embeddings(text):
         # Generate embeddings
         with torch.no_grad():
             embeddings = model(**inputs).pooler_output
+        
+        # return embeddings.tolist()[0]
+
 
         return np.array(embeddings)
+    
 
     except Exception as e:
         print(f"Error generating embeddings: {e}")
@@ -65,7 +69,7 @@ def generate_and_store_embeddings(
 
                     # Generate embeddings
                     embeddings = generate_embeddings(text_content)
-                    print(f"embeddings are: {embeddings}")
+                    # print(f"embeddings are: {embeddings}")
                     # print(type(embeddings))
 
                     if embeddings is not None:
@@ -75,17 +79,22 @@ def generate_and_store_embeddings(
                             "page_id": text_file.replace(".txt", ""),
                         }
                         print(f"metadata is: {metadata}")
-                        try:
-                            chroma_store.add_embeddings(
-                                [text_file.replace(".txt", "")],
-                                embeddings.tolist(),
-                                [metadata],
-                            )  # Note: single embedding, hence the list wrapping
-                        except Exception as e:
-                            print(f"Error adding embeddings to ChromaDB: {e}")
+                        # try:
+                        #     chroma_store.add_embeddings(
+                        #         [text_file.replace(".txt", "")],
+                        #         embeddings.tolist(),
+                        #         [metadata],
+                        #     )  # Note: single embedding, hence the list wrapping
+                        # except Exception as e:
+                        #     print(f"Error adding embeddings to ChromaDB: {e}")
 
                         embedding_file_path = os.path.join(
                             output_dir, space_dir, text_file.replace(".txt", ".npy")
                         )  # Use .npy extension
                         os.makedirs(os.path.dirname(embedding_file_path), exist_ok=True)
                         save_embeddings(embedding_file_path, embeddings)
+
+# def query_store_embeddings(query_embedding: list[list[float]], k: int = 5) -> list[dict]:
+#     """Queries the ChromaDB store for the most similar embeddings to the given query embedding."""
+#     return chroma_store.query_embeddings(query_embedding, k)
+

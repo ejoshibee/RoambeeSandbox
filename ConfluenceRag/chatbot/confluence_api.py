@@ -1,3 +1,4 @@
+import os
 import requests
 from requests.utils import parse_header_links
 import json
@@ -90,7 +91,7 @@ def get_pages_for_space(url, headers, auth, space_id) -> list:
     """
     try:
         # Fetch pages for the given space
-        pages_url = f"{url}/spaces/{space_id}/pages?body-format=atlas_doc_format"
+        pages_url = f"{url}/spaces/{space_id}/pages?limit=250&body-format=atlas_doc_format"
         response = requests.get(pages_url, headers=headers, auth=auth)
         response.raise_for_status()
 
@@ -146,3 +147,41 @@ def parseADF(page_content) -> list[str]:
     extract_text_objects(parsed_atlas_doc["content"])
 
     return page_content_body
+
+def process_page_content(page) -> list[str]:
+    # page_id = page.get("id")
+    # page_title = page.get("title")
+
+    # TODO: FIX PAGE CONTENT PARSING CURRENTLY BROKEN
+
+    # Store page details in a list or database
+    page_content = page.get("body")
+    parsed_page_content = parseADF(page_content)
+    return parsed_page_content
+
+
+def save_processed_text_to_files(processed_text, space_key, space_name, page_title):
+    """
+    Saves processed text to files in the data/confluence_data/ directory.
+
+    Args:
+        processed_text (list): List of strings/sentences making up the content of the page.
+        space_key (str): Space key of the Confluence space.
+        page_id (str): ID of the Confluence page.
+    """
+    # Define directory path for the unique space named by its key
+    directory_path = f"data/confluence_data/{space_key}"
+
+    # Create directory if it doesn't exist
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path)
+
+    # Define file path
+    file_path = f"{directory_path}/{page_title.replace('/', '-')}.txt"
+
+    # Write processed text to file
+    with open(file_path, "w") as file:
+        file.write(f"Space: {space_name}\n")
+        file.write(f"Page Title: {page_title}\n")
+        for sentence in processed_text:
+            file.write(sentence + "\n")
