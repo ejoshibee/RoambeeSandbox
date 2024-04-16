@@ -18,7 +18,6 @@ from llama_index.core.extractors import (
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.query_engine import RetrieverQueryEngine
 
-# from llama_index.core.postprocessor import SimilarityPostprocessor
 from llama_index.extractors.entity import EntityExtractor
 
 from llama_index.llms.ollama import Ollama
@@ -31,7 +30,7 @@ class LlamaIndex:
     def __init__(self, data_path):
         """
         Initialize the LlamaIndex class with the specified data path.
-        
+
         Args:
         data_path (str): The path to the directory where the documents are stored.
         """
@@ -55,10 +54,10 @@ class LlamaIndex:
         def get_meta(file_path):
             """
             Extract metadata from the file.
-            
+
             Args:
             file_path (str): Path to the file from which metadata is extracted.
-            
+
             Returns:
             dict: A dictionary containing metadata about the file.
             """
@@ -83,7 +82,7 @@ class LlamaIndex:
     def set_embed_model(self, model_path):
         """
         Set the embedding model path in LlamaIndex settings.
-        
+
         Args:
         model_path (str): The path to the embedding model set in main.py set_embed_model execution.
         """
@@ -94,7 +93,7 @@ class LlamaIndex:
     def set_ollama(self, model, request_timeout):
         """
         Configure the Ollama model with the specified model and timeout.
-        
+
         Args:
         model (str): The model name or identifier.
         request_timeout (int): Timeout in seconds for the model requests.
@@ -107,14 +106,14 @@ class LlamaIndex:
     def create_index(self, isNode):
         """
         Create an index based on whether the index is for nodes or documents.
-        
+
         Args:
         isNode (bool): Flag to determine if the index is for nodes.
         """
         # Determine the collection name based on the node flag
         collection_name = f"llama_index_{isNode}"
         self.chroma_collection = self.db.get_or_create_collection(name=collection_name)
-        
+
         # Check the current size of the collection
         collection_size = self.chroma_collection.count()
 
@@ -123,20 +122,19 @@ class LlamaIndex:
             print(
                 f"collection {collection_name} is not fresh. Populating collection..."
             )
-            
 
             # DOCUMENT VERSION
             print("creating a document based llama index")
 
             vector_store = ChromaVectorStore(chroma_collection=self.chroma_collection)
             storage_context = StorageContext.from_defaults(vector_store=vector_store)
-            
+
             # Create a new index from the documents using the specified vector store and embedding model
             self.index = VectorStoreIndex.from_documents(
                 self.documents,
                 storage_context=storage_context,
                 embed_model=Settings.embed_model,
-                transformations=[KeywordExtractor(keywords=6)]
+                transformations=[KeywordExtractor(keywords=6)],
             )
         else:
             print(
@@ -146,14 +144,13 @@ class LlamaIndex:
             vector_store = ChromaVectorStore(chroma_collection=self.chroma_collection)
             storage_context = StorageContext.from_defaults(vector_store=vector_store)
             self.index = VectorStoreIndex.from_vector_store(
-                vector_store=vector_store,
-                storage_context=storage_context
+                vector_store=vector_store, storage_context=storage_context
             )
 
     def create_query_engine(self, stream):
         """
         Create a query engine for processing queries using the index.
-        
+
         Args:
         stream (bool): Determines if the response synthesizer should operate in streaming mode.
         """
@@ -165,7 +162,7 @@ class LlamaIndex:
         )
         # Configure the response synthesizer based on the streaming flag
         response_synthesizer = get_response_synthesizer(streaming=stream)
-        
+
         # Set up the query engine with the configured retriever and response synthesizer
         self.query_engine = RetrieverQueryEngine(
             retriever=retriever,
@@ -175,13 +172,13 @@ class LlamaIndex:
     def query(self, query_str):
         """
         Execute a query using the query engine.
-        
+
         Args:
         query_str (str): The query string to be processed.
-        
+
         Returns:
         object: The result of the query.
-        
+
         Raises:
         ValueError: If the query engine has not been created.
         """
@@ -191,7 +188,7 @@ class LlamaIndex:
             )
 
         return self.query_engine.query(query_str)
-    
+
     def doc_to_node(self):
         """
         Convert documents to nodes by applying various transformations for metadata extraction.
