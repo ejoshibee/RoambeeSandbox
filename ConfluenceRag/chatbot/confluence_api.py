@@ -4,36 +4,56 @@ from requests.utils import parse_header_links
 import json
 
 
-def get_space_by_key(confluenceRestUrl, headers, auth, space_key):
+def get_space_by_keys(confluenceRestUrl, headers, auth, space_keys: list[str]):
     """
-    Fetches details of a specific space by its key from the Confluence REST API.
+    Fetches details of a specific space or spaces by its key(s) from the Confluence REST API.
 
     Args:
         confluenceRestUrl (str): The base URL of the Confluence REST API.
         headers (dict): The headers to be sent with the request.
-        auth (tuple): The authentication credentials, typically (username, password).
-        space_key (str): The key of the space to fetch details for.
+        auth (tuple): The authentication credentials from .env, (user email, confluence api token).
+        space_keys (list[str]): The key(s) of the space(s) to fetch details for.
 
     Returns:
-        None: Prints the formatted JSON response containing space details or an error message.
+        list: A list of dictionaries, each representing a space within the specified space.
+              If an error occurs, an empty list is returned.
 
     Raises:
         requests.exceptions.RequestException: If an error occurs during the network request.
     """
 
     try:
-        keys: list[str] = [space_key]
-        # Network request to fetch the space details
-        response = requests.request(
-            "GET", f"{confluenceRestUrl}/spaces?keys={keys}", headers=headers, auth=auth
-        )
-        print(
-            f"response is: {json.dumps(json.loads(response.text), sort_keys=True, indent=4, separators=(',', ': '))}"
-        )
-        print("")
+        keys_param = ','.join(space_keys)
+
+        spaces_url = f"{confluenceRestUrl}/spaces?keys={keys_param}"
+
+        list_of_spaces = []
+
+        response = requests.get(spaces_url, headers=headers, auth=auth)
         response.raise_for_status()
+
+        spaces_data = response.json()
+        list_of_spaces.extend(spaces_data["results"])
+        print(list_of_spaces)
+        print(f"list_of_spaces length is: {len(list_of_spaces)}")
+
+        if "Link" in response.headers:
+            sanitized_link = get_sanitized_next_link(response.headers)
+            print(f"Next URL (without overlapping '/wiki'): {sanitized_link}")
+            try:
+                moreSpaces = requests.get(sanitized_link, headers=headers, auth=auth)
+                moreSpaces.raise_for_status()
+                moreSpaces = moreSpaces.json()
+                
+                list_of_spaces.extend(moreSpaces["results"])
+            except Exception as e:
+                print(f"An error occurred while fetching more spaces: {e}")  
+
+        print(f"\nTotal spaces retrieved: {len(list_of_spaces)}")
+        return list_of_spaces
     except requests.exceptions.RequestException as e:
         print(f"An error occurred while fetching space details: {e}")
+        return []
 
 
 def get_sanitized_next_link(headers):
@@ -160,7 +180,7 @@ def process_page_content(page) -> list[str]:
     return parsed_page_content
 
 
-def save_processed_text_to_files(processed_text, space_key, space_name, page_title):
+def save_processed_text_to_files(processed_text, space_key, space_name, page_title, webui_link):
     """
     Saves processed text to files in the data/confluence_data/ directory.
 
@@ -170,7 +190,12 @@ def save_processed_text_to_files(processed_text, space_key, space_name, page_tit
         page_id (str): ID of the Confluence page.
     """
     # Define directory path for the unique space named by its key
-    directory_path = f"data/confluence_data/{space_key}"
+    
+    print(f"webui_link from page: {webui_link}")
+    if len(processed_text) < 4:
+        directory_path = f"data/empty_page/{space_key}"
+    else:
+        directory_path = f"data/confluence_data/{space_key}"
 
     # Create directory if it doesn't exist
     if not os.path.exists(directory_path):
@@ -181,7 +206,8 @@ def save_processed_text_to_files(processed_text, space_key, space_name, page_tit
 
     # Write processed text to file
     with open(file_path, "w") as file:
-        file.write(f"Space: {space_name}\n")
-        file.write(f"Page Title: {page_title}\n")
+        file.write(f"{space_name}\n")
+        file.write(f"{page_title}\n")
+        file.write(f"https://roambee.atlassian.net/wiki{webui_link}\n")
         for sentence in processed_text:
             file.write(sentence + "\n")
