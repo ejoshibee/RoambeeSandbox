@@ -6,9 +6,9 @@ from llama_index.core import (
 )
 from llama_index.core import StorageContext
 from llama_index.core.embeddings import resolve_embed_model
-
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
+
 from llama_index.core.extractors import (
     SummaryExtractor,
     QuestionsAnsweredExtractor,
@@ -17,7 +17,6 @@ from llama_index.core.extractors import (
 )
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.query_engine import RetrieverQueryEngine
-
 from llama_index.extractors.entity import EntityExtractor
 
 from llama_index.llms.ollama import Ollama

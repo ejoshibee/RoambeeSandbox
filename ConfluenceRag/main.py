@@ -20,9 +20,49 @@ logger = logging.getLogger(__name__)
 load_dotenv()
 
 
+def ensure_data_directories(data_directory, list_of_spaces, streamlit_component=None):
+    """
+    Ensures that the specified data directory and subdirectories for each space exist. This is
+    because confluence data is partitioned by space key, thus can have as many subdirectories as there are keys in list_of_spaces
+
+    Args:
+        data_directory (str): The path to the main data directory.
+        list_of_spaces (list): A list of space keys for which subdirectories are expected.
+        streamlit_component (streamlit.empty(), optional):
+            Streamlit component used to display information messages. Defaults to None.
+
+    Returns:
+        bool: True if the data directory and all subdirectories exist, False otherwise.
+    """
+
+    # Check if the data directory exists
+    if not os.path.exists(data_directory):
+        if streamlit_component:
+            streamlit_component.info(f"Directory {data_directory} does not exist.")
+        return False
+
+    # Check for missing space subdirectories (spaces from list_of_spaces)
+    missing_directories = [
+        space
+        for space in list_of_spaces
+        if not os.path.exists(os.path.join(data_directory, space))
+    ]
+    if missing_directories:
+        if streamlit_component:
+            streamlit_component.info(
+                f"Missing directories for spaces: {', '.join(missing_directories)}"
+            )
+        return False
+
+    # data exists
+    if streamlit_component:
+        streamlit_component.info("All necessary directories are present.")
+    return True
+
+
 def main():
     st.title("The Interactive Roambee Bookipedia")
-    
+
     info_placeholder = st.empty()
 
     username = os.getenv("username")
@@ -33,26 +73,7 @@ def main():
 
     data_directory = "data/confluence_data"
     list_spaces = ["RKB", "BH"]
-    data_exist = True
-
-    # Check if the data directory exists
-    if not os.path.exists(data_directory):
-        data_exist = False
-        info_placeholder.info(f"Directory {data_directory} does not exist.")
-    else:
-        # Check for the presence of each space's subdirectory
-        missing_directories = [
-            space
-            for space in list_spaces
-            if not os.path.exists(os.path.join(data_directory, space))
-        ]
-        if missing_directories:
-            data_exist = False
-            info_placeholder.info(
-                f"Missing directories for spaces: {', '.join(missing_directories)}"
-            )
-        else:
-            info_placeholder.info("All necessary directories are present.")
+    data_exist = ensure_data_directories(data_directory, list_spaces, info_placeholder)
 
     if not data_exist:
         with st.spinner("Fetching and processing data..."):
@@ -79,7 +100,7 @@ def main():
                         print(f"Document saved: {count}")
             except requests.exceptions.RequestException as e:
                 st.error(f"An error occurred: {e}")
-    
+
     info_placeholder.info("Data fetched and processed successfully. Loading Llama...")
 
     @st.cache_resource(show_spinner=False)
@@ -89,7 +110,10 @@ def main():
                 "/Users/eshaan/Documents/Roambee/sandbox/ConfluenceRag/data/confluence_data"
             )
             llama_index.load_data()
-            transformers = {"MiniLM": "local:sentence-transformers/all-MiniLM-L6-v2", "BAAI": "local:BAAI/bge-small-en-v1.5"}
+            transformers = {
+                "MiniLM": "local:sentence-transformers/all-MiniLM-L6-v2",
+                "BAAI": "local:BAAI/bge-small-en-v1.5",
+            }
             llama_index.set_embed_model(transformers["MiniLM"])
             llama_index.set_ollama("mistral", 30.0)
             llama_index.create_index(False)  # Assuming isNode is False
@@ -97,7 +121,9 @@ def main():
             return llama_index
 
     llama_index = load_data()
-    info_placeholder.info("For more reading, check out [Roambee's Knowledge Base](https://roambee.atlassian.net/wiki/spaces/RKB/overview)")    
+    info_placeholder.info(
+        "For more reading, check out [Roambee's Knowledge Base](https://roambee.atlassian.net/wiki/spaces/RKB/overview)"
+    )
     if "messages" not in st.session_state:  # Initialize the chat message history
         st.session_state.messages = [
             {
@@ -132,15 +158,17 @@ def main():
                 )
 
                 for node in response.source_nodes:
-                    print(node.metadata.get("page_title"))  
+                    print(node.metadata.get("page_title"))
                     print(f"{node.get_score()}")
 
                     # Access extracted keywords
                     keywords = node.metadata.get("excerpt_keywords")
                     if keywords:
                         print(f"Keywords: {keywords}")
+
+                    # Handle cases where keywords might be missing
                     else:
-                        print("Keywords not found")  # Handle cases where keywords might be missing
+                        print("Keywords not found")
 
                     print(f"{node.metadata}\n")
 
