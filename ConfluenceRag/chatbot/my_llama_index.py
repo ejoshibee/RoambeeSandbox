@@ -123,10 +123,12 @@ class LlamaIndex:
                 f"collection {collection_name} is not fresh. Populating collection..."
             )
 
-            # DOCUMENT VERSION
             print("creating a document based llama index")
 
+            # Create a vector store using the Chroma collection from the database
             vector_store = ChromaVectorStore(chroma_collection=self.chroma_collection)
+
+            # Initialize storage context with default settings overiding vector_store with the specified vector store
             storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
             # Create a new index from the documents using the specified vector store and embedding model
@@ -195,6 +197,7 @@ class LlamaIndex:
         """
         print("converting documents to nodes")
 
+        # Define the transformations to be applied to the documents
         transformations = [
             SentenceSplitter(),
             TitleExtractor(nodes=5),
@@ -203,9 +206,11 @@ class LlamaIndex:
             KeywordExtractor(keywords=10),
             EntityExtractor(prediction_threshold=0.5),
         ]
-        # turn documents to nodes and process for metadata extraction
+
+        # Apply transformations to the first 10 documents
         print(f"applying transformations: {transformations}")
         pipeline = IngestionPipeline(transformations=transformations)
 
+        # Apply transformations to the first 10 documents
         print("running Ingestion Pipeline")
         self.nodes = pipeline.run(documents=self.documents[0:10])
