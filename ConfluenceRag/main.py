@@ -115,7 +115,7 @@ def main():
                 "BAAI": "local:BAAI/bge-small-en-v1.5",
             }
             llama_index.set_embed_model(transformers["MiniLM"])
-            llama_index.set_ollama("mistral", 30.0)
+            llama_index.set_ollama("phi:latest", 30.0)
             llama_index.create_index(False)  # Assuming isNode is False
             llama_index.create_query_engine(True)  # Assuming stream is True
             return llama_index
