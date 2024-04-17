@@ -14,7 +14,7 @@ from chatbot.confluence_api import (
 import logging
 
 # Setup logging to capture stdout from the application
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 load_dotenv()
@@ -73,6 +73,8 @@ def main():
 
     data_directory = "data/confluence_data"
     list_spaces = ["RKB", "BH"]
+
+    # Check that the specified data directories exist
     data_exist = ensure_data_directories(data_directory, list_spaces, info_placeholder)
 
     if not data_exist:
@@ -105,26 +107,40 @@ def main():
 
     @st.cache_resource(show_spinner=False)
     def load_data():
+        # Display a spinner while loading data
         with st.spinner(text="Loading data..."):
+            # Initialize the LlamaIndex with the specified data directory
             llama_index = LlamaIndex(
                 "/Users/eshaan/Documents/Roambee/sandbox/ConfluenceRag/data/confluence_data"
             )
+            # Load data into the LlamaIndex
             llama_index.load_data()
+            
+            # Define dictionary of usable transformer models for embedding documents
             transformers = {
                 "MiniLM": "local:sentence-transformers/all-MiniLM-L6-v2",
                 "BAAI": "local:BAAI/bge-small-en-v1.5",
+                "T5Base": "local:sentence-transformers/gtr-t5-base"
             }
-            llama_index.set_embed_model(transformers["MiniLM"])
-            llama_index.set_ollama("phi:latest", 30.0)
-            llama_index.create_index(False)  # Assuming isNode is False
-            llama_index.create_query_engine(True)  # Assuming stream is True
+            # Set the embedding model to MiniLM
+            llama_index.set_embed_model(transformers["T5Base"])
+            # Set the ollama model with a specific version and threshold
+            llama_index.set_ollama("mistral:latest", 59.0)
+            # Create the index for the LlamaIndex, assuming it is not a node
+            llama_index.create_index(False)
+            # Create the query engine for the LlamaIndex, assuming streaming is enabled
+            llama_index.create_query_engine(True)
+            # Return the fully initialized LlamaIndex
             return llama_index
 
     llama_index = load_data()
+
     info_placeholder.info(
         "For more reading, check out [Roambee's Knowledge Base](https://roambee.atlassian.net/wiki/spaces/RKB/overview)"
     )
-    if "messages" not in st.session_state:  # Initialize the chat message history
+    
+    # Initialize the chat message history
+    if "messages" not in st.session_state:
         st.session_state.messages = [
             {
                 "role": "assistant",
@@ -143,20 +159,28 @@ def main():
         st.chat_message("user").markdown(user_query)
         st.session_state.messages.append({"role": "user", "content": user_query})
 
+        # Assigning this response to the assistant role
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
+                # Query the llama index to build a streamed response
                 response = llama_index.query(user_query)
+                # Initialize an empty placeholder for the displayed response
                 message_placeholder = st.empty()
+                # Initialize an empty string for the full response
                 full_response = ""
+                
+                # Capture the streamed tokens to render the response in a streamed format to streamlit
                 for chunk in response.response_gen:
                     full_response += chunk
                     message_placeholder.markdown(full_response + " ")
 
-                seen_links = set()
+                
                 additional_sources = (
                     "You can read these additional sources for more information:\n"
                 )
 
+                
+                # FOR DEV: Iterate over the source nodes in the response to print relevant info
                 for node in response.source_nodes:
                     print(node.metadata.get("page_title"))
                     print(f"{node.get_score()}")
@@ -172,6 +196,10 @@ def main():
 
                     print(f"{node.metadata}\n")
 
+                # Initialize an empty set to store the seen links
+                seen_links = set()
+                
+                # Iterate over the source nodes in the response to capture unique links to confluence sources
                 for node in response.source_nodes:
                     webui_link = node.metadata.get("webui_link")
                     if webui_link not in seen_links:

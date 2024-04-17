@@ -1,3 +1,10 @@
-.env
-/node_modules
+# Ignore ENV Files
+*.env
+# Ignore Node Modules folders
+node_modules
+# Ignore ReactRouterGenerator test folders
 /ReactRouterGenerator/test/
+# Ignore .DS_Store files from Mac Users
+.DS_Store
+# Ignore cached Python Byte Code (generated for optimized script writing)
+*.pyc
