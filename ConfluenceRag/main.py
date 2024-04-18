@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+
 from dotenv import load_dotenv
 from chatbot.my_llama_index import LlamaIndex
 import requests
@@ -22,6 +23,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 load_dotenv()
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 def ensure_data_directories(data_directory, list_of_spaces, streamlit_component=None):
@@ -136,7 +138,7 @@ def main():
         )
 
         @st.cache_resource(show_spinner=False)
-        def load_data():
+        def load_data(stream, isNode):
             # Display a spinner while loading data
             with st.spinner(text="Loading data..."):
                 # Initialize the LlamaIndex with the specified data directory
@@ -146,25 +148,43 @@ def main():
                 # Load data into the LlamaIndex
                 llama_index.load_data()
 
-                # Define dictionary of usable transformer models for embedding documents
-                transformers = {
+                # Define dictionary of usable embedding models for embedding documents
+                embedding = {
                     "MiniLM": "local:sentence-transformers/all-MiniLM-L6-v2",
                     "BAAI": "local:BAAI/bge-small-en-v1.5",
                     "T5Base": "local:sentence-transformers/gtr-t5-base",
                 }
                 # Set the embedding model to MiniLM
-                llama_index.set_embed_model(transformers["T5Base"])
-                # Set the ollama model with a specific version and threshold
-                llama_index.set_ollama("wizardlm2:7b:latest", 59.0)
+                llama_index.set_embed_model(embedding["T5Base"])
+
+                # Set the llm to use for querying (Default to OpenAI). set api_token to None for Ollama querying (naturally change the llms[MODEL_NAME] as well)
+                llms = {
+                    "wizard": "wizardlm2:7b",
+                    "mistral": "mistral:latest",
+                    "dolphin": "dolphin-mixtral:latest",
+                    "openai35turbo": "gpt-3.5-turbo",
+                    "openai4turbo": "gpt-4-turbo",
+                }
+                request_timeout = 59.0
+                llama_index.set_llm(
+                    llms["openai35turbo"], request_timeout, api_token=OPENAI_API_KEY
+                )
+
                 # Create the index for the LlamaIndex, assuming it is not a node
-                llama_index.create_index(False)
+                llama_index.create_index(isNode)
+
                 # Create the query engine for the LlamaIndex, assuming streaming is enabled
-                llama_index.create_query_engine(True)
+                llama_index.create_query_engine(stream)
+
                 # Return the fully initialized LlamaIndex
                 return llama_index
 
+        # Set response streaming on or off
+        stream = True
+        # DEFAULT DON'T CHANGE
+        isNode = False
         # Initialize all LlamaIndex related things
-        llama_index = load_data()
+        llama_index = load_data(stream, isNode)
 
         info_placeholder.info(
             "For more reading, check out [Roambee's Knowledge Base](https://roambee.atlassian.net/wiki/spaces/RKB/overview)"
@@ -201,9 +221,13 @@ def main():
                     full_response = ""
 
                     # Capture the streamed tokens to render the response in a streamed format to streamlit
-                    for chunk in response.response_gen:
-                        full_response += chunk
-                        message_placeholder.markdown(full_response + " ")
+                    if stream:
+                        for chunk in response.response_gen:
+                            full_response += chunk
+                            message_placeholder.markdown(full_response + " ")
+                    else:
+                        full_response = response.response
+                        message_placeholder.markdown(full_response)
 
                     additional_sources = "If the response is insufficient, visit the following reference sources for more detailed information:\n"
 

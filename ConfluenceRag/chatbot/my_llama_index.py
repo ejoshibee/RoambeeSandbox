@@ -10,7 +10,6 @@ from llama_index.core import StorageContext
 from llama_index.core.embeddings import resolve_embed_model
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
-from llama_index.core.postprocessor import LLMRerank
 
 
 from llama_index.core.extractors import (
@@ -25,6 +24,7 @@ from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.extractors.entity import EntityExtractor
 
 from llama_index.llms.ollama import Ollama
+from llama_index.llms.openai import OpenAI
 
 from llama_index.vector_stores.chroma import ChromaVectorStore
 import chromadb
@@ -35,7 +35,6 @@ session = px.launch_app()
 
 # Once you have started a Phoenix server, you can start your LlamaIndex application and configure it to send traces to Phoenix. To do this, you will have to add configure Phoenix as the global handler
 set_global_handler("arize_phoenix")
-
 
 
 class LlamaIndex:
@@ -103,18 +102,25 @@ class LlamaIndex:
         print(f"Setting embed model to {model_path[6:]}")
         Settings.embed_model = resolve_embed_model(model_path)
 
-    def set_ollama(self, model, request_timeout):
+    def set_llm(self, model, request_timeout=None, api_token=None):
         """
-        Configure the Ollama model with the specified model and timeout.
+        Configure the LLM to OpenAI or Local Ollama instance with the specified model and timeout.
 
         Args:
         model (str): The model name or identifier.
         request_timeout (int): Timeout in seconds for the model requests.
+        api_token (str): OpenAI API key for authentication. Defaults to none -> Ollama setup
         """
-        print(
-            f"setting Ollama model to {model} with a request timeout of {request_timeout} seconds"
-        )
-        Settings.llm = Ollama(model=model, request_timeout=request_timeout)
+        if api_token is None:
+            print(
+                f"setting Ollama model to {model} with a request timeout of {request_timeout} seconds"
+            )
+            Settings.llm = Ollama(model=model, request_timeout=request_timeout)
+        else:
+            print("Using OpenAI model to gpt-3.5-turbo with a temperature of 0.7")
+            Settings.llm = OpenAI(
+                model=model, temperature=0.7, timeout=request_timeout, api_key=api_token
+            )
 
     def create_index(self, isNode):
         """
@@ -149,6 +155,7 @@ class LlamaIndex:
                 embed_model=Settings.embed_model,
                 transformations=[
                     # SentenceSplitter(),
+                    # Add more transformations if necessary or IMPLEMENT DOC_TO_NODE 
                     KeywordExtractor(keywords=10)
                 ],
             )
@@ -170,14 +177,16 @@ class LlamaIndex:
         Args:
         stream (bool): Determines if the response synthesizer should operate in streaming mode.
         """
-        print("Creating query engine")
+        print(f"Creating query engine, with response streaming: {stream}")
         # Initialize the retriever with the index and set the number of top similar items to retrieve
         retriever = VectorIndexRetriever(
             index=self.index,
             similarity_top_k=6,
         )
         # Configure the response synthesizer based on the streaming flag
-        response_synthesizer = get_response_synthesizer(streaming=stream)
+        response_synthesizer = get_response_synthesizer(
+            streaming=stream, structured_answer_filtering=False
+        )
 
         # Set up the query engine with the configured retriever and response synthesizer
         self.query_engine = RetrieverQueryEngine(
