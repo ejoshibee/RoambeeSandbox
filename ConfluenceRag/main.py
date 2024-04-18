@@ -65,6 +65,47 @@ def ensure_data_directories(data_directory, list_of_spaces, streamlit_component=
         streamlit_component.info("All necessary directories are present.")
     return True
 
+@st.cache_resource(show_spinner=False)
+def load_data(stream, isNode):
+    # Display a spinner while loading data
+    with st.spinner(text="Loading data..."):
+        # Initialize the LlamaIndex with the specified data directory
+        llama_index = LlamaIndex(
+            "/Users/eshaan/Documents/Roambee/sandbox/ConfluenceRag/data/confluence_data"
+        )
+        # Load data into the LlamaIndex
+        llama_index.load_data()
+
+        # Define dictionary of usable embedding models for embedding documents
+        embedding = {
+            "MiniLM": "local:sentence-transformers/all-MiniLM-L6-v2",
+            "BAAI": "local:BAAI/bge-small-en-v1.5",
+            "T5Base": "local:sentence-transformers/gtr-t5-base",
+        }
+        # Set the embedding model to MiniLM
+        llama_index.set_embed_model(embedding["T5Base"])
+
+        # Set the llm to use for querying (Default to OpenAI). set api_token to None for Ollama querying (naturally change the llms[MODEL_NAME] as well)
+        llms = {
+            "wizard": "wizardlm2:7b",
+            "mistral": "mistral:latest",
+            "dolphin": "dolphin-mixtral:latest",
+            "openai35turbo": "gpt-3.5-turbo",
+            "openai4turbo": "gpt-4-turbo",
+        }
+        request_timeout = 59.0
+        llama_index.set_llm(
+            llms["openai35turbo"], request_timeout, api_token=OPENAI_API_KEY
+        )
+
+        # Create the index for the LlamaIndex, assuming it is not a node
+        llama_index.create_index(isNode)
+
+        # Create the query engine for the LlamaIndex, assuming streaming is enabled
+        llama_index.create_query_engine(stream)
+
+        # Return the fully initialized LlamaIndex
+        return llama_index
 
 def main():
     st.title("The Interactive Roambee Beekipedia")
@@ -137,52 +178,11 @@ def main():
             "Data fetched and processed successfully. Loading Llama..."
         )
 
-        @st.cache_resource(show_spinner=False)
-        def load_data(stream, isNode):
-            # Display a spinner while loading data
-            with st.spinner(text="Loading data..."):
-                # Initialize the LlamaIndex with the specified data directory
-                llama_index = LlamaIndex(
-                    "/Users/eshaan/Documents/Roambee/sandbox/ConfluenceRag/data/confluence_data"
-                )
-                # Load data into the LlamaIndex
-                llama_index.load_data()
-
-                # Define dictionary of usable embedding models for embedding documents
-                embedding = {
-                    "MiniLM": "local:sentence-transformers/all-MiniLM-L6-v2",
-                    "BAAI": "local:BAAI/bge-small-en-v1.5",
-                    "T5Base": "local:sentence-transformers/gtr-t5-base",
-                }
-                # Set the embedding model to MiniLM
-                llama_index.set_embed_model(embedding["T5Base"])
-
-                # Set the llm to use for querying (Default to OpenAI). set api_token to None for Ollama querying (naturally change the llms[MODEL_NAME] as well)
-                llms = {
-                    "wizard": "wizardlm2:7b",
-                    "mistral": "mistral:latest",
-                    "dolphin": "dolphin-mixtral:latest",
-                    "openai35turbo": "gpt-3.5-turbo",
-                    "openai4turbo": "gpt-4-turbo",
-                }
-                request_timeout = 59.0
-                llama_index.set_llm(
-                    llms["openai35turbo"], request_timeout, api_token=OPENAI_API_KEY
-                )
-
-                # Create the index for the LlamaIndex, assuming it is not a node
-                llama_index.create_index(isNode)
-
-                # Create the query engine for the LlamaIndex, assuming streaming is enabled
-                llama_index.create_query_engine(stream)
-
-                # Return the fully initialized LlamaIndex
-                return llama_index
-
         # Set response streaming on or off
         stream = True
         # DEFAULT DON'T CHANGE
         isNode = False
+        
         # Initialize all LlamaIndex related things
         llama_index = load_data(stream, isNode)
 
