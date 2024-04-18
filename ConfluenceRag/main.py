@@ -155,7 +155,7 @@ def main():
                 # Set the embedding model to MiniLM
                 llama_index.set_embed_model(transformers["T5Base"])
                 # Set the ollama model with a specific version and threshold
-                llama_index.set_ollama("mistral:latest", 59.0)
+                llama_index.set_ollama("wizardlm2:7b:latest", 59.0)
                 # Create the index for the LlamaIndex, assuming it is not a node
                 llama_index.create_index(False)
                 # Create the query engine for the LlamaIndex, assuming streaming is enabled

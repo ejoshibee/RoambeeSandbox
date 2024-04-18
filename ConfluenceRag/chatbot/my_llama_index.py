@@ -1,7 +1,9 @@
+import phoenix as px
 from llama_index.core import (
+    Settings,
     VectorStoreIndex,
     SimpleDirectoryReader,
-    Settings,
+    set_global_handler,
     get_response_synthesizer,
 )
 from llama_index.core import StorageContext
@@ -26,6 +28,14 @@ from llama_index.llms.ollama import Ollama
 
 from llama_index.vector_stores.chroma import ChromaVectorStore
 import chromadb
+
+
+# To view traces in Phoenix, you will first have to start a Phoenix server. You can do this by running the following:
+session = px.launch_app()
+
+# Once you have started a Phoenix server, you can start your LlamaIndex application and configure it to send traces to Phoenix. To do this, you will have to add configure Phoenix as the global handler
+set_global_handler("arize_phoenix")
+
 
 
 class LlamaIndex:
@@ -194,7 +204,9 @@ class LlamaIndex:
                 "Query engine is not created. Call create_query_engine first."
             )
 
-        return self.query_engine.query(query_str)
+        response = self.query_engine.query(query_str)
+        px.active_session().url
+        return response
 
     # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
