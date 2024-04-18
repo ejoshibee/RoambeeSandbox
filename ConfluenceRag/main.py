@@ -11,7 +11,7 @@ from chatbot.confluence_api import (
     save_processed_text_to_files,
     get_space_by_keys,
 )
-from llama_index.readers.confluence import ConfluenceReader
+# from llama_index.readers.confluence import ConfluenceReader
 
 from streamlit_keycloak import login
 
