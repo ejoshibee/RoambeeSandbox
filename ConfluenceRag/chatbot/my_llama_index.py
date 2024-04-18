@@ -8,6 +8,8 @@ from llama_index.core import StorageContext
 from llama_index.core.embeddings import resolve_embed_model
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
+from llama_index.core.postprocessor import LLMRerank
+
 
 from llama_index.core.extractors import (
     SummaryExtractor,
@@ -15,6 +17,7 @@ from llama_index.core.extractors import (
     TitleExtractor,
     KeywordExtractor,
 )
+
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.extractors.entity import EntityExtractor
@@ -33,7 +36,7 @@ class LlamaIndex:
         Args:
         data_path (str): The path to the directory where the documents are stored.
         """
-        print("initializing LlamaIndex and persistent_ChromaDB clients")
+        print("Initializing LlamaIndex and persistent_ChromaDB clients")
         self.data_path = data_path
         self.documents = None
         self.index = None
@@ -72,7 +75,8 @@ class LlamaIndex:
                 "webui_link": webui_link,
             }
 
-        # Read and load document objects from the data path using metadata extraction
+        # Read and load document objects from the data path adding metadata to each document in the process
+        # TODO: Investigate reimplementation of doc_to_node (Bottom of file) method for more granular control on node pre-processing
         self.documents = SimpleDirectoryReader(
             self.data_path, recursive=True, file_metadata=get_meta
         ).load_data()
@@ -85,8 +89,8 @@ class LlamaIndex:
         Args:
         model_path (str): The path to the embedding model set in main.py set_embed_model execution.
         """
-        # TODO: Move param model_path to client initialization in main.py
-        print(f"setting embed model to {model_path}")
+        # TODO: Investigate moving param model_path to client initialization
+        print(f"Setting embed model to {model_path[6:]}")
         Settings.embed_model = resolve_embed_model(model_path)
 
     def set_ollama(self, model, request_timeout):
@@ -110,19 +114,17 @@ class LlamaIndex:
         isNode (bool): Flag to determine if the index is for nodes.
         """
         # Determine the collection name based on the node flag
+        # TODO: Change to a static name as Doc_to_node is not being tested
         collection_name = f"llama_index_{isNode}"
         self.chroma_collection = self.db.get_or_create_collection(name=collection_name)
 
         # Check the current size of the collection
         collection_size = self.chroma_collection.count()
 
-        # check if the collection is empty TODO: IMPLEMENT A REAL CHECK
+        # check if the collection is empty
+        # TODO: IMPLEMENT A REAL CHECK
         if collection_size == 0:
-            print(
-                f"collection {collection_name} is not fresh. Populating collection..."
-            )
-
-            print("creating a document based llama index")
+            print(f"collection {collection_name} is empty. Populating collection...")
 
             # Create a vector store using the Chroma collection from the database
             vector_store = ChromaVectorStore(chroma_collection=self.chroma_collection)
@@ -158,11 +160,11 @@ class LlamaIndex:
         Args:
         stream (bool): Determines if the response synthesizer should operate in streaming mode.
         """
-        print("creating a query engine")
+        print("Creating query engine")
         # Initialize the retriever with the index and set the number of top similar items to retrieve
         retriever = VectorIndexRetriever(
             index=self.index,
-            similarity_top_k=5,
+            similarity_top_k=6,
         )
         # Configure the response synthesizer based on the streaming flag
         response_synthesizer = get_response_synthesizer(streaming=stream)
@@ -171,6 +173,7 @@ class LlamaIndex:
         self.query_engine = RetrieverQueryEngine(
             retriever=retriever,
             response_synthesizer=response_synthesizer,
+            node_postprocessors=[],
         )
 
     def query(self, query_str):
@@ -192,10 +195,10 @@ class LlamaIndex:
             )
 
         return self.query_engine.query(query_str)
-# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+    # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    # UNUSED
     def doc_to_node(self):
         """
         Convert documents to nodes by applying various transformations for metadata extraction.
