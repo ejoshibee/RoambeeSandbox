@@ -18,7 +18,7 @@ from streamlit_keycloak import login
 import logging
 
 # Setup logging to capture stdout from the application
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 load_dotenv()
@@ -66,21 +66,23 @@ def ensure_data_directories(data_directory, list_of_spaces, streamlit_component=
 
 
 @st.cache_resource(show_spinner=False)
-def load_data(stream, isNode):
+def load_data(stream, isNode, isHTTP):
     # Display a spinner while loading data
     with st.spinner(text="Loading data..."):
         # Initialize the LlamaIndex with the specified data directory
         llama_index = LlamaIndex(
-            "/Users/eshaan/Documents/Roambee/sandbox/ConfluenceRag/data/confluence_data"
+            "/Users/eshaan/Documents/Roambee/sandbox/ConfluenceRag/data/confluence_data",
+            isNode,
+            isHTTP,
         )
         # Load data into the LlamaIndex
         llama_index.load_data()
 
         # Define dictionary of usable embedding models for embedding documents
         embedding = {
-            "MiniLM": "local:sentence-transformers/all-MiniLM-L6-v2",
-            "BAAI": "local:BAAI/bge-small-en-v1.5",
-            "T5Base": "local:sentence-transformers/gtr-t5-base",
+            "MiniLM": "sentence-transformers/all-MiniLM-L6-v2",
+            "BAAI": "BAAI/bge-small-en-v1.5",
+            "T5Base": "sentence-transformers/gtr-t5-base",
         }
         # Set the embedding model to MiniLM
         llama_index.set_embed_model(embedding["T5Base"])
@@ -99,7 +101,7 @@ def load_data(stream, isNode):
         )
 
         # Create the index for the LlamaIndex, assuming it is not a node
-        llama_index.create_index(isNode)
+        llama_index.create_index()
 
         # Create the query engine for the LlamaIndex, assuming streaming is enabled
         llama_index.create_query_engine(stream)
@@ -111,9 +113,9 @@ def load_data(stream, isNode):
 def main():
     st.title("The Interactive Roambee Beekipedia")
     keycloak = login(
-        url="http://localhost:8080",
-        realm="ConfluenceRAG",
-        client_id="test",
+        url=os.getenv("KC_URL"),
+        realm=os.getenv("KC_REALM"),
+        client_id=os.getenv("KC_CLIENT_ID"),
     )
 
     if keycloak.authenticated:
@@ -181,11 +183,16 @@ def main():
 
         # Set response streaming on or off
         stream = True
+
         # DEFAULT DON'T CHANGE
+        # SET TRUE FOR EXPIREMENTAL NODES
         isNode = False
 
+        # FOR DEV TESTING HTTP CLIENT:
+        isHTTP = True
+
         # Initialize all LlamaIndex related things
-        llama_index = load_data(stream, isNode)
+        llama_index = load_data(stream, isNode, isHTTP)
 
         info_placeholder.info(
             "For more reading, check out [Roambee's Knowledge Base](https://roambee.atlassian.net/wiki/spaces/RKB/overview)"

@@ -7,10 +7,9 @@ from llama_index.core import (
     get_response_synthesizer,
 )
 from llama_index.core import StorageContext
-from llama_index.core.embeddings import resolve_embed_model
+from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
-
 
 from llama_index.core.extractors import (
     SummaryExtractor,
@@ -20,8 +19,10 @@ from llama_index.core.extractors import (
 )
 
 from llama_index.core.retrievers import VectorIndexRetriever
+from llama_index.core.retrievers import RecursiveRetriever
 from llama_index.core.query_engine import RetrieverQueryEngine
 from llama_index.extractors.entity import EntityExtractor
+from llama_index.core.schema import IndexNode
 
 from llama_index.llms.ollama import Ollama
 from llama_index.llms.openai import OpenAI
@@ -38,7 +39,7 @@ set_global_handler("arize_phoenix")
 
 
 class LlamaIndex:
-    def __init__(self, data_path):
+    def __init__(self, data_path, isNode, isHTTP):
         """
         Initialize the LlamaIndex class with the specified data path.
 
@@ -51,9 +52,17 @@ class LlamaIndex:
         self.index = None
         self.query_engine = None
         self.nodes = None
-        self.db = chromadb.PersistentClient(
-            path="/Users/eshaan/Documents/Roambee/sandbox/ConfluenceRag/data/chroma_db"
-        )
+        self.isNode = isNode
+        self.isHTTP = isHTTP
+        if isHTTP is True:
+            self.db = chromadb.HttpClient(
+                host="localhost",
+                port=8000
+            )
+        else:
+            self.db = chromadb.PersistentClient(
+                path="/Users/eshaan/Documents/Roambee/sandbox/ConfluenceRag/data/chroma_db"
+            )
         self.chroma_collection = None
 
     def load_data(self):
@@ -86,10 +95,16 @@ class LlamaIndex:
 
         # Read and load document objects from the data path adding metadata to each document in the process
         # TODO: Investigate reimplementation of doc_to_node (Bottom of file) method for more granular control on node pre-processing
-        self.documents = SimpleDirectoryReader(
-            self.data_path, recursive=True, file_metadata=get_meta
-        ).load_data()
-        print(f"Number of documents loaded: {len(self.documents)}")
+        if self.isHTTP is not True:
+            self.documents = SimpleDirectoryReader(
+                self.data_path, recursive=True, file_metadata=get_meta
+            ).load_data()
+            print(f"Number of documents loaded: {len(self.documents)}")
+        else:
+            # TODO: Cloud data storage for documents to be loaded from
+            self.documents = SimpleDirectoryReader(
+                "/Users/eshaan/Documents/Roambee/sandbox/ConfluenceRag/data/confluence_data", recursive=True, file_metadata=get_meta
+            ).load_data()
 
     def set_embed_model(self, model_path):
         """
@@ -99,8 +114,8 @@ class LlamaIndex:
         model_path (str): The path to the embedding model set in main.py set_embed_model execution.
         """
         # TODO: Investigate moving param model_path to client initialization
-        print(f"Setting embed model to {model_path[6:]}")
-        Settings.embed_model = resolve_embed_model(model_path)
+        print(f"Setting embed model to {model_path}")
+        Settings.embed_model = HuggingFaceEmbedding(model_path)
 
     def set_llm(self, model, request_timeout=None, api_token=None):
         """
@@ -122,16 +137,13 @@ class LlamaIndex:
                 model=model, temperature=0.7, timeout=request_timeout, api_key=api_token
             )
 
-    def create_index(self, isNode):
+    def create_index(self):
         """
         Create an index based on whether the index is for nodes or documents.
-
-        Args:
-        isNode (bool): Flag to determine if the index is for nodes.
         """
         # Determine the collection name based on the node flag
         # TODO: Change to a static name as Doc_to_node is not being tested
-        collection_name = f"llama_index_{isNode}"
+        collection_name = f"llama_index_{self.isNode}"
         self.chroma_collection = self.db.get_or_create_collection(name=collection_name)
 
         # Check the current size of the collection
@@ -141,24 +153,72 @@ class LlamaIndex:
         # TODO: IMPLEMENT A REAL CHECK
         if collection_size == 0:
             print(f"collection {collection_name} is empty. Populating collection...")
+            # TODO: FIX LOGIC INSIDE THIS IF,
+            if self.isNode is True:
+                print("Building Nodes")
+                # build parent chunks via NodeParser
+                node_parser = SentenceSplitter(chunk_size=1024)
+                base_nodes = node_parser.get_nodes_from_documents(self.documents)
 
-            # Create a vector store using the Chroma collection from the database
-            vector_store = ChromaVectorStore(chroma_collection=self.chroma_collection)
+                # define smaller child chunks
+                sub_chunk_sizes = [256, 512]
+                sub_node_parsers = [
+                    SentenceSplitter(chunk_size=c, chunk_overlap=20)
+                    for c in sub_chunk_sizes
+                ]
 
-            # Initialize storage context with default settings overiding vector_store with the specified vector store
-            storage_context = StorageContext.from_defaults(vector_store=vector_store)
+                all_nodes = []
+                for base_node in base_nodes:
+                    for n in sub_node_parsers:
+                        sub_nodes = n.get_nodes_from_documents([base_node])
+                        sub_inodes = [
+                            IndexNode.from_text_node(sn, base_node.node_id)
+                            for sn in sub_nodes
+                        ]
+                        all_nodes.extend(sub_inodes)
+                    # also add original node to node
+                    original_node = IndexNode.from_text_node(
+                        base_node, base_node.node_id
+                    )
+                    print(f"original_node after processing: {original_node}")
+                    all_nodes.append(original_node)
 
-            # Create a new index from the documents using the specified vector store and embedding model
-            self.index = VectorStoreIndex.from_documents(
-                self.documents,
-                storage_context=storage_context,
-                embed_model=Settings.embed_model,
-                transformations=[
-                    # SentenceSplitter(),
-                    # Add more transformations if necessary or IMPLEMENT DOC_TO_NODE 
-                    KeywordExtractor(keywords=10)
-                ],
-            )
+                self.nodes = all_nodes
+
+                # TODO: Debug the index creation from nodes
+                # (chromaDB related, when adding nodes to collection, the node_id contains a full NodeWithScore object, not the NodeWithScore.node-id)
+                self.index = VectorStoreIndex(
+                    nodes=self.nodes,
+                    embed_model=Settings.embed_model,
+                    storage_context=StorageContext.from_defaults(
+                        vector_store=self.chroma_collection
+                    )
+                )
+            else:
+                print("initializing Chroma Vector Store")
+                # Create a vector store using the Chroma collection from the database
+                vector_store = ChromaVectorStore(
+                    chroma_collection=self.chroma_collection
+                )
+
+                print("Initializing Storage Context")
+                # Initialize storage context with default settings overiding vector_store with the specified vector store
+                storage_context = StorageContext.from_defaults(
+                    vector_store=vector_store
+                )
+
+                print(f"Initializing a vector store Index from our documents, and embedding with the Settings.embed {Settings.embed_model}")
+                # Create a new index from the documents using the specified vector store and embedding model
+                self.index = VectorStoreIndex.from_documents(
+                    self.documents,
+                    storage_context=storage_context,
+                    embed_model=Settings.embed_model,
+                    transformations=[
+                        # SentenceSplitter(),
+                        # Add more transformations if necessary or IMPLEMENT DOC_TO_NODE
+                        KeywordExtractor(keywords=10)
+                    ],
+                )
         else:
             print(
                 f"collection {collection_name} is already populated. Loading index from vector store..."
@@ -179,21 +239,40 @@ class LlamaIndex:
         """
         print(f"Creating query engine, with response streaming: {stream}")
         # Initialize the retriever with the index and set the number of top similar items to retrieve
-        retriever = VectorIndexRetriever(
-            index=self.index,
-            similarity_top_k=10,
-        )
-        # Configure the response synthesizer based on the streaming flag
-        response_synthesizer = get_response_synthesizer(
-            streaming=stream, structured_answer_filtering=False
-        )
+        if self.isNode is True:
+            all_nodes = self.nodes
+            vector_retriever_chunk = self.index.as_retriever(similarity_top_k=2)
 
-        # Set up the query engine with the configured retriever and response synthesizer
-        self.query_engine = RetrieverQueryEngine(
-            retriever=retriever,
-            response_synthesizer=response_synthesizer,
-            node_postprocessors=[],
-        )
+            # build RecursiveRetriever
+            all_nodes_dict = {n.node_id: n for n in all_nodes}
+            retriever_chunk = RecursiveRetriever(
+                "vector",
+                retriever_dict={"vector": vector_retriever_chunk},
+                node_dict=all_nodes_dict,
+                verbose=True,
+            )
+            # build RetrieverQueryEngine using recursive_retriever
+            query_engine_chunk = RetrieverQueryEngine.from_args(
+                retriever=retriever_chunk,
+            )
+            self.query_engine = query_engine_chunk
+        else:
+            retriever = VectorIndexRetriever(
+                index=self.index,
+                similarity_top_k=6,
+            )
+            # Configure the response synthesizer based on the streaming flag
+            response_synthesizer = get_response_synthesizer(
+                streaming=stream,
+                structured_answer_filtering=False,
+            )
+
+            # Set up the query engine with the configured retriever and response synthesizer
+            self.query_engine = RetrieverQueryEngine(
+                retriever=retriever,
+                response_synthesizer=response_synthesizer,
+                # node_postprocessors=[],
+            )
 
     def query(self, query_str):
         """
