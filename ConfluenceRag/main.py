@@ -15,7 +15,6 @@ from chatbot.confluence_api import (
 
 from streamlit_keycloak import login
 
-
 import logging
 
 # Setup logging to capture stdout from the application
@@ -65,6 +64,7 @@ def ensure_data_directories(data_directory, list_of_spaces, streamlit_component=
         streamlit_component.info("All necessary directories are present.")
     return True
 
+
 @st.cache_resource(show_spinner=False)
 def load_data(stream, isNode):
     # Display a spinner while loading data
@@ -107,6 +107,7 @@ def load_data(stream, isNode):
         # Return the fully initialized LlamaIndex
         return llama_index
 
+
 def main():
     st.title("The Interactive Roambee Beekipedia")
     keycloak = login(
@@ -146,12 +147,12 @@ def main():
         list_spaces = ["RKB", "BH"]
 
         # Check that the specified data directories exist
-        data_exist = ensure_data_directories(
+        directories_exist = ensure_data_directories(
             data_directory, list_spaces, info_placeholder
         )
 
         # If necessary directories are not present, data is missing so fetch it
-        if not data_exist:
+        if not directories_exist:
             with st.spinner("Fetching and processing data..."):
                 try:
                     list_of_spaces = get_space_by_keys(
@@ -182,7 +183,7 @@ def main():
         stream = True
         # DEFAULT DON'T CHANGE
         isNode = False
-        
+
         # Initialize all LlamaIndex related things
         llama_index = load_data(stream, isNode)
 

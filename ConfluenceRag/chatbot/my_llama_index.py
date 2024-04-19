@@ -181,7 +181,7 @@ class LlamaIndex:
         # Initialize the retriever with the index and set the number of top similar items to retrieve
         retriever = VectorIndexRetriever(
             index=self.index,
-            similarity_top_k=6,
+            similarity_top_k=10,
         )
         # Configure the response synthesizer based on the streaming flag
         response_synthesizer = get_response_synthesizer(
