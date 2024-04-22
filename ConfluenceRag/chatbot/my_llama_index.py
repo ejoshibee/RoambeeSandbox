@@ -1,41 +1,42 @@
-import phoenix as px
+# import phoenix as px
 from llama_index.core import (
     Settings,
     VectorStoreIndex,
     SimpleDirectoryReader,
-    set_global_handler,
+    # set_global_handler,
     get_response_synthesizer,
 )
 from llama_index.core import StorageContext
-from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-from llama_index.core.ingestion import IngestionPipeline
+from llama_index.core.embeddings import resolve_embed_model
+
+# from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
 
-from llama_index.core.extractors import (
-    SummaryExtractor,
-    QuestionsAnsweredExtractor,
-    TitleExtractor,
-    KeywordExtractor,
-)
+# from llama_index.core.extractors import (
+#     SummaryExtractor,
+#     QuestionsAnsweredExtractor,
+#     TitleExtractor,
+#     KeywordExtractor,
+# )
 
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.retrievers import RecursiveRetriever
 from llama_index.core.query_engine import RetrieverQueryEngine
-from llama_index.extractors.entity import EntityExtractor
+# from llama_index.extractors.entity import EntityExtractor
 from llama_index.core.schema import IndexNode
 
 from llama_index.llms.ollama import Ollama
 from llama_index.llms.openai import OpenAI
 
 from llama_index.vector_stores.chroma import ChromaVectorStore
-import chromadb
+from chromadb import chromadb, Settings as ChromaSettings
 
 
 # To view traces in Phoenix, you will first have to start a Phoenix server. You can do this by running the following:
-session = px.launch_app()
+# session = px.launch_app()
 
 # Once you have started a Phoenix server, you can start your LlamaIndex application and configure it to send traces to Phoenix. To do this, you will have to add configure Phoenix as the global handler
-set_global_handler("arize_phoenix")
+# set_global_handler("arize_phoenix")
 
 
 class LlamaIndex:
@@ -54,16 +55,19 @@ class LlamaIndex:
         self.nodes = None
         self.isNode = isNode
         self.isHTTP = isHTTP
+        self.chroma_collection = None
         if isHTTP is True:
             self.db = chromadb.HttpClient(
-                host="localhost",
-                port=8000
+                # host="localhost"
+                # chroma host for container
+                host="chromadb",
+                port=8000,
+                settings = ChromaSettings(allow_reset=True, anonymized_telemetry=True)
             )
         else:
             self.db = chromadb.PersistentClient(
-                path="/Users/eshaan/Documents/Roambee/sandbox/ConfluenceRag/data/chroma_db"
+                path="./data/chroma_db"
             )
-        self.chroma_collection = None
 
     def load_data(self):
         """
@@ -82,6 +86,7 @@ class LlamaIndex:
             dict: A dictionary containing metadata about the file.
             """
             with open(file_path, "r") as file:
+                # print(file_path)
                 lines = file.readlines()
                 space_name = lines[0].strip()
                 page_title = lines[1].strip()
@@ -103,7 +108,7 @@ class LlamaIndex:
         else:
             # TODO: Cloud data storage for documents to be loaded from
             self.documents = SimpleDirectoryReader(
-                "/Users/eshaan/Documents/Roambee/sandbox/ConfluenceRag/data/confluence_data", recursive=True, file_metadata=get_meta
+                self.data_path, recursive=True, file_metadata=get_meta
             ).load_data()
 
     def set_embed_model(self, model_path):
@@ -115,11 +120,11 @@ class LlamaIndex:
         """
         # TODO: Investigate moving param model_path to client initialization
         print(f"Setting embed model to {model_path}")
-        Settings.embed_model = HuggingFaceEmbedding(model_path)
+        Settings.embed_model = resolve_embed_model(model_path)
 
     def set_llm(self, model, request_timeout=None, api_token=None):
         """
-        Configure the LLM to OpenAI or Local Ollama instance with the specified model and timeout.
+        Configure the querying LLM to OpenAI or Local Ollama instance with the specified model and timeout.
 
         Args:
         model (str): The model name or identifier.
@@ -209,15 +214,17 @@ class LlamaIndex:
 
                 print(f"Initializing a vector store Index from our documents, and embedding with the Settings.embed {Settings.embed_model}")
                 # Create a new index from the documents using the specified vector store and embedding model
+                # embedding_model = HuggingFaceEmbedding(model_name="BAAI/bge-small-en-v1.5")
                 self.index = VectorStoreIndex.from_documents(
                     self.documents,
+                    show_progress=True,
                     storage_context=storage_context,
                     embed_model=Settings.embed_model,
-                    transformations=[
-                        # SentenceSplitter(),
-                        # Add more transformations if necessary or IMPLEMENT DOC_TO_NODE
-                        KeywordExtractor(keywords=10)
-                    ],
+                    # transformations=[
+                    #     # SentenceSplitter(),
+                    #     # Add more transformations if necessary or IMPLEMENT DOC_TO_NODE
+                    #     KeywordExtractor(keywords=10)
+                    # ],
                 )
         else:
             print(
@@ -229,7 +236,6 @@ class LlamaIndex:
             self.index = VectorStoreIndex.from_vector_store(
                 vector_store=vector_store, storage_context=storage_context
             )
-
     def create_query_engine(self, stream):
         """
         Create a query engine for processing queries using the index.
@@ -293,32 +299,32 @@ class LlamaIndex:
             )
 
         response = self.query_engine.query(query_str)
-        px.active_session().url
+        # px.active_session().url
         return response
 
     # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     # UNUSED
-    def doc_to_node(self):
-        """
-        Convert documents to nodes by applying various transformations for metadata extraction.
-        """
-        print("converting documents to nodes")
+    # def doc_to_node(self):
+    #     """
+    #     Convert documents to nodes by applying various transformations for metadata extraction.
+    #     """
+    #     print("converting documents to nodes")
 
-        # Define the transformations to be applied to the documents
-        transformations = [
-            SentenceSplitter(),
-            TitleExtractor(nodes=5),
-            QuestionsAnsweredExtractor(questions=3),
-            SummaryExtractor(summaries=["prev", "self"]),
-            KeywordExtractor(keywords=10),
-            EntityExtractor(prediction_threshold=0.5),
-        ]
+    #     # Define the transformations to be applied to the documents
+    #     transformations = [
+    #         SentenceSplitter(),
+    #         TitleExtractor(nodes=5),
+    #         QuestionsAnsweredExtractor(questions=3),
+    #         SummaryExtractor(summaries=["prev", "self"]),
+    #         KeywordExtractor(keywords=10),
+    #         EntityExtractor(prediction_threshold=0.5),
+    #     ]
 
-        # Apply transformations to the first 10 documents
-        print(f"applying transformations: {transformations}")
-        pipeline = IngestionPipeline(transformations=transformations)
+    #     # Apply transformations to the first 10 documents
+    #     print(f"applying transformations: {transformations}")
+    #     pipeline = IngestionPipeline(transformations=transformations)
 
-        # Apply transformations to the first 10 documents
-        print("running Ingestion Pipeline")
-        self.nodes = pipeline.run(documents=self.documents[0:10])
+    #     # Apply transformations to the first 10 documents
+    #     print("running Ingestion Pipeline")
+    #     self.nodes = pipeline.run(documents=self.documents[0:10])
