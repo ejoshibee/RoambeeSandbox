@@ -112,7 +112,11 @@ def load_data(stream, isNode, isHTTP):
 
 
 def main():
-    st.title("The Interactive Roambee Beekipedia")
+    st.set_page_config(
+        page_title="Artemis",
+        # page_icon="https://roambee.atlassian.net/wiki/spaces/RKB/pages/166966/Roambee+Logo+-+Blue+%281%29",
+    )
+    st.title("💬   with Beekipedia")
     # keycloak = login(
     #     url=os.getenv("KC_URL"),
     #     realm=os.getenv("KC_REALM"),

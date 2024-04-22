@@ -12,12 +12,9 @@ from llama_index.core.embeddings import resolve_embed_model
 # from llama_index.core.ingestion import IngestionPipeline
 from llama_index.core.node_parser import SentenceSplitter
 
-# from llama_index.core.extractors import (
-#     SummaryExtractor,
-#     QuestionsAnsweredExtractor,
-#     TitleExtractor,
-#     KeywordExtractor,
-# )
+from llama_index.core.extractors import (
+    KeywordExtractor,
+)
 
 from llama_index.core.retrievers import VectorIndexRetriever
 from llama_index.core.retrievers import RecursiveRetriever
@@ -223,7 +220,7 @@ class LlamaIndex:
                     # transformations=[
                     #     # SentenceSplitter(),
                     #     # Add more transformations if necessary or IMPLEMENT DOC_TO_NODE
-                    #     KeywordExtractor(keywords=10)
+                        # KeywordExtractor(keywords=10, llm=Settings.embed_model)
                     # ],
                 )
         else:
