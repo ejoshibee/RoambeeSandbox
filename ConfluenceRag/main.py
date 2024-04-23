@@ -25,9 +25,10 @@ load_dotenv()
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
+# Data Directory Management
 def ensure_data_directories(data_directory, list_of_spaces, streamlit_component=None):
     """
-    Ensures that the specified data directory and subdirectories for each space exist. This is
+    Ensures that the specified data persistence directory and subdirectories for each space exist. This is
     because confluence data is partitioned by space key, thus can have as many subdirectories as there are keys in list_of_spaces
 
     Args:
@@ -66,8 +67,21 @@ def ensure_data_directories(data_directory, list_of_spaces, streamlit_component=
     return True
 
 
+# Llama Index Initializer
 @st.cache_resource(show_spinner=False)
-def load_data(stream, isNode, isHTTP):
+def init_llama_index(stream: bool, isNode: bool, isHTTP: bool) -> LlamaIndex:
+    """
+    Initializes the LlamaIndex Class with the specified data directory and embedding model.
+    Handles all setup for the query engine and data stores.
+
+    Args:
+        stream (bool): Whether to use streaming for the query response.
+        isNode (bool): Whether to use nodes for document pre-processing instead of default document pre-processing in LlamaIndex.
+        isHTTP (bool): Whether to use the HTTP version of the LLaMA index.
+
+    Returns:
+        LlamaIndex: The initialized LLaMA index.
+    """
     # Display a spinner while loading data
     with st.spinner(text="Loading data..."):
         # Initialize the LlamaIndex with the specified data directory
@@ -81,13 +95,13 @@ def load_data(stream, isNode, isHTTP):
         llama_index.load_data()
 
         # Define dictionary of usable embedding models for embedding documents
-        embedding = {
+        embeddings = {
             "MiniLM": "local:sentence-transformers/all-MiniLM-L6-v2",
             "BAAI": "local:BAAI/bge-small-en-v1.5",
             "T5Base": "local:sentence-transformers/gtr-t5-base",
         }
         # Set the embedding model to MiniLM
-        llama_index.set_embed_model(embedding["T5Base"])
+        llama_index.set_embed_model(embeddings["T5Base"])
         # Set the llm to use for querying (Default to OpenAI). set api_token to None for Ollama querying (naturally change the llms[MODEL_NAME] as well)
         llms = {
             "wizard": "wizardlm2:7b",
@@ -111,12 +125,35 @@ def load_data(stream, isNode, isHTTP):
         return llama_index
 
 
-def main():
+# Configuration for the streamlit app
+def configure_streamlit_app():
+    """
+    Configures the Streamlit app with a title, favicon, and layout.
+    """
     st.set_page_config(
         page_title="Artemis",
-        # page_icon="https://roambee.atlassian.net/wiki/spaces/RKB/pages/166966/Roambee+Logo+-+Blue+%281%29",
+        page_icon="public/favicon.ico",
     )
     st.title("💬   with Beekipedia")
+
+
+# Authentication and Authorization
+def authenticate_and_authorize():
+    """
+    Returns the authentication and headers object for the Confluence API methods, and the Confluence REST URL.
+    """
+    conf_username = os.getenv("CONFLUENCE_USERNAME")
+    conf_token = os.getenv("CONFLUENCE_API_TOKEN")
+
+    auth = HTTPBasicAuth(conf_username, conf_token)
+
+    headers = {"Accept": "application/json"}
+    confluenceRestUrl = "https://roambee.atlassian.net/wiki/api/v2"
+
+    return auth, headers, confluenceRestUrl
+
+
+def main():
     # keycloak = login(
     #     url=os.getenv("KC_URL"),
     #     realm=os.getenv("KC_REALM"),
@@ -124,10 +161,6 @@ def main():
     # )
 
     # if keycloak.authenticated:
-    info_placeholder = st.empty()
-
-    conf_username = os.getenv("CONFLUENCE_USERNAME")
-    conf_token = os.getenv("CONFLUENCE_API_TOKEN")
 
     # conf_client_id = os.getenv("CONFLUENCE_CLIENT_ID")
 
@@ -145,24 +178,24 @@ def main():
     # except requests.exceptions.RequestException as e:
     #     st.error(f"An error occurred making a confluence request for authentication: {e}")
 
-    auth = HTTPBasicAuth(conf_username, conf_token)
+    # Configure the Streamlit app
+    configure_streamlit_app()
 
-    headers = {"Accept": "application/json"}
-    confluenceRestUrl = "https://roambee.atlassian.net/wiki/api/v2"
+    info_placeholder = st.empty()
 
+    # Authenticate and authorize the user
+    auth, headers, confluenceRestUrl = authenticate_and_authorize()
+
+    # Ensure that the specified data directories exist
     data_directory = "data/confluence_data"
     list_spaces = ["RKB", "BH"]
-
-    # Check that the specified data directories exist
     directories_exist = ensure_data_directories(
         data_directory, list_spaces, info_placeholder
     )
 
     # If necessary directories are not present, data is missing so fetch it
     if not directories_exist:
-        print(
-            "data doesnt exist"
-        )
+        print("data doesnt exist")
         with st.spinner("Fetching and processing data..."):
             try:
                 list_of_spaces = get_space_by_keys(
@@ -185,9 +218,7 @@ def main():
             except requests.exceptions.RequestException as e:
                 st.error(f"An error occurred: {e}")
 
-    info_placeholder.info(
-        "Data fetched and processed successfully. Loading Llama..."
-    )
+    info_placeholder.info("Data fetched and processed successfully. Loading Llama...")
 
     # Set response streaming on or off
     stream = True
@@ -200,7 +231,7 @@ def main():
     isHTTP = True
 
     # Initialize all LlamaIndex related things
-    llama_index = load_data(stream, isNode, isHTTP)
+    llama_index = init_llama_index(stream, isNode, isHTTP)
 
     info_placeholder.info(
         "For more reading, check out [Roambee's Knowledge Base](https://roambee.atlassian.net/wiki/spaces/RKB/overview)"
@@ -236,7 +267,8 @@ def main():
                 # Initialize an empty string for the full response
                 full_response = ""
 
-                # Capture the streamed tokens to render the response in a streamed format to streamlit
+                # If stream was set True, capture the streamed tokens to build the response chunk-by-chunk in streamlits chat interface
+                # Else, render the full response in the chat interface
                 if stream:
                     for chunk in response.response_gen:
                         full_response += chunk
@@ -245,12 +277,12 @@ def main():
                     full_response = response.response
                     message_placeholder.markdown(full_response)
 
-                additional_sources = "If the response is insufficient, visit the following reference sources for more detailed information:\n"
+                additional_sources = "If you would like to know more, visit the following reference sources for more detailed information:\n"
 
-                # Initialize an empty set to store the seen links
+                # Initialize an empty set to store unique confluence links
                 seen_links = set()
 
-                # Iterate over the source nodes in the response to capture unique links to confluence sources
+                # Iterate over the source nodes in the response to capture confluence page links from node metadata
                 for node in response.source_nodes:
                     webui_link = node.metadata.get("webui_link")
                     if webui_link not in seen_links:
@@ -258,9 +290,7 @@ def main():
                         seen_links.add(webui_link)
 
                 # append the additional sources string to the full response
-                full_response_with_links = (
-                    full_response + "\n\n" + additional_sources
-                )
+                full_response_with_links = full_response + "\n\n" + additional_sources
                 message_placeholder.markdown(full_response_with_links)
 
                 # Add response to message history
@@ -268,7 +298,7 @@ def main():
                     {"role": "assistant", "content": full_response_with_links}
                 )
 
-                # FOR DEV: Print relevant node information after response
+                # FOR DEV: Print relevant node information after response for inspection
                 for node in response.source_nodes:
                     print(f"Page Title: {node.metadata.get('page_title')}")
                     print(f"Score: {node.get_score()}")
