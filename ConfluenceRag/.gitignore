@@ -4,3 +4,4 @@
 *.cpython-312*
 .env
 
+conftest.py
