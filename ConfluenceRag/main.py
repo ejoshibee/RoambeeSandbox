@@ -69,12 +69,13 @@ def ensure_data_directories(data_directory, list_of_spaces, streamlit_component=
 
 # Llama Index Initializer
 @st.cache_resource(show_spinner=False)
-def init_llama_index(stream: bool, isNode: bool, isHTTP: bool) -> LlamaIndex:
+def init_llama_index(data_directory: str, stream: bool, isNode: bool, isHTTP: bool) -> LlamaIndex:
     """
     Initializes the LlamaIndex Class with the specified data directory and embedding model.
     Handles all setup for the query engine and data stores.
 
     Args:
+        data_directory (str): The path to the main data directory.
         stream (bool): Whether to use streaming for the query response.
         isNode (bool): Whether to use nodes for document pre-processing instead of default document pre-processing in LlamaIndex.
         isHTTP (bool): Whether to use the HTTP version of the LLaMA index.
@@ -87,7 +88,7 @@ def init_llama_index(stream: bool, isNode: bool, isHTTP: bool) -> LlamaIndex:
         # Initialize the LlamaIndex with the specified data directory
         # print(os.path.dirname(__file__))
         llama_index = LlamaIndex(
-            os.path.join(os.path.dirname(__file__), "data/confluence_data"),
+            os.path.join(os.path.dirname(__file__), data_directory),
             isNode,
             isHTTP,
         )
@@ -178,7 +179,7 @@ def main():
     # except requests.exceptions.RequestException as e:
     #     st.error(f"An error occurred making a confluence request for authentication: {e}")
 
-    # Configure the Streamlit app
+    # Configure the Streamlit app with pre-set settings
     configure_streamlit_app()
 
     info_placeholder = st.empty()
@@ -231,7 +232,7 @@ def main():
     isHTTP = True
 
     # Initialize all LlamaIndex related things
-    llama_index = init_llama_index(stream, isNode, isHTTP)
+    llama_index = init_llama_index(data_directory, stream, isNode, isHTTP)
 
     info_placeholder.info(
         "For more reading, check out [Roambee's Knowledge Base](https://roambee.atlassian.net/wiki/spaces/RKB/overview)"
@@ -286,7 +287,7 @@ def main():
                 for node in response.source_nodes:
                     webui_link = node.metadata.get("webui_link")
                     if webui_link not in seen_links:
-                        additional_sources += f"- [{webui_link}]({webui_link})\n"
+                        additional_sources += f"- [{node.metadata.get('page_title')}]({webui_link})\n"
                         seen_links.add(webui_link)
 
                 # append the additional sources string to the full response
