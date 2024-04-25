@@ -5,3 +5,4 @@
 .env
 
 conftest.py
+/data/conf_reader_data
