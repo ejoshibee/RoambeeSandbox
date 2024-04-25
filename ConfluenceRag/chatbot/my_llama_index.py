@@ -1,4 +1,5 @@
 # import phoenix as px
+import os
 from llama_index.core import (
     Settings,
     VectorStoreIndex,
@@ -58,7 +59,7 @@ class LlamaIndex:
                 # host="localhost"
                 # chroma host for container
                 host="chromadb",
-                port=8000,
+                port=os.getenv("CHROMADB_PORT"),
                 settings = ChromaSettings(allow_reset=True, anonymized_telemetry=True)
             )
         else:

@@ -7,10 +7,10 @@ services:
       dockerfile: Dockerfile
     image: streamlit_app:latest
     container_name: ConfluenceRagClient
-    ports:
-      - "8501:8501"
     env_file:
       - .env
+    ports:
+      - "${STREAMLIT_PORT}:${STREAMLIT_PORT}"
     volumes:
       - .:/ConfluenceRag
     networks:
@@ -27,7 +27,7 @@ services:
       # Currently it's located in "/chroma/chroma/"
       - chroma-data:/chroma/chroma/
     ports:
-      - 8000:8000
+      - "${CHROMADB_PORT}:${CHROMADB_PORT}"
     networks:
       - net
 
