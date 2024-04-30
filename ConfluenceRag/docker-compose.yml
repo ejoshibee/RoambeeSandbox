@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: streamlit_app:latest
+    image: streamlit_app
     container_name: ConfluenceRagClient
     env_file:
       - .env
@@ -28,6 +28,16 @@ services:
       - chroma-data:/chroma/chroma/
     ports:
       - "${CHROMADB_PORT}:${CHROMADB_PORT}"
+    networks:
+      - net
+  
+  cronjob:
+    image: test_cron
+    container_name: cronjob
+    env_file:
+      - .env
+    environment:
+      - CHROMADB_PORT=8000
     networks:
       - net
 

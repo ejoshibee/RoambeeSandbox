@@ -4,7 +4,4 @@
 *.cpython-312*
 .env
 
-conftest.py
 /data/conf_reader_data
-cronjob.py
-crontab
