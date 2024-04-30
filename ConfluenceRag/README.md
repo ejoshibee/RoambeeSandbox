@@ -2,6 +2,7 @@
 
 This client is designed to enable easier access to information and knowledge stored in Roambee's vast Confluence knowledge base. Currently, the only indexed spaces are the Roambee Beekipedia and BeeHow spaces, but as the pages get fleshed out and uneneccessary documents are pruned, additional spaces will be added. 
 
+
 ## FOR DEVOPS:
 * **Python Version:** Project developed and built on Python 3.12, and uses the python:3.12-slim docker image.
 * **Images:** The project uses the following docker images:
@@ -18,7 +19,6 @@ This client is designed to enable easier access to information and knowledge sto
 ## Roadmap (Future Development):
 
 - **SSO Integration for Protected Client:** Integrate with existing Keycloak endpoint to authorize the user prior to access of chat. 
-
 
 
 ## ENV:
@@ -38,8 +38,8 @@ Set the following environment variables in a .env file before executing the ```d
 docker-compose up --build
 ```
 
-## Contribution:
 
+## Contribution:
 Contributions are welcome! Feel free to submit issues or pull requests on the GitHub repository.
 
 To locally develop on this tool, fork this repository and run the following commands after setting the environment variables.
@@ -51,5 +51,3 @@ pip install --upgrade pip
 pip install -r requirements.txt
 streamlit run streamlit_app.py
 ```
-
-> Note: This tool is in its early stages of development. While it offers basic functionality, it may not yet cover all possible use cases.
