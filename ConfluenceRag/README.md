@@ -10,14 +10,15 @@ This client is designed to enable easier access to information and knowledge sto
   * **cron_job**: The cron_job image executes the ```update_chroma_db.py``` script every 24 hours via a Crontab. There was an issue in running both the Cronjob and the Streamlit application from the same command, hence the individual image. This image is built on top of the python:3.9-slim image, and installs ```chromadb``` and ```atlassian-python-api```.
 
 
+## Features
+
+- **Chat with Beekipedia:** Simply put, a chat UI for the Beekipedia and Beehow spaces. Ask any general question and get a response complete with relevant sources for deeper dives into your queries.  
+
+
 ## Roadmap (Future Development):
 
 - **SSO Integration for Protected Client:** Integrate with existing Keycloak endpoint to authorize the user prior to access of chat. 
 
-
-## Features
-
-- **Chat with Beekipedia:** Simply put, a chat UI for the Beekipedia and Beehow spaces. Ask any general question and get a response complete with relevant sources for deeper dives into your queries.  
 
 
 ## ENV:
