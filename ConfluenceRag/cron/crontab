@@ -1,1 +1,1 @@
-* * * * * /usr/local/bin/python /conftest.py >> /var/log/cronjob.log 2>&1
+* * * * * /usr/local/bin/python /update_chroma_db.py >> /var/log/cronjob.log 2>&1

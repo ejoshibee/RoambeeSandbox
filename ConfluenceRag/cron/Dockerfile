@@ -3,7 +3,7 @@ FROM python:3.9-slim
 ENV PYTHONUNBUFFERED=1
 ENV CHROMADB_PORT=8000
 
-COPY conftest.py .
+COPY update_chroma_db.py .
 
 ADD crontab /etc/cron.d/hello-cron
 
