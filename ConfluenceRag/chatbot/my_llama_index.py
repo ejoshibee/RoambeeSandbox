@@ -156,7 +156,7 @@ class LlamaIndex:
         # TODO: IMPLEMENT A REAL CHECK
         if collection_size == 0:
             print(f"collection {collection_name} is empty. Populating collection...")
-            # TODO: FIX LOGIC INSIDE THIS IF,
+            # TODO: FIX LOGIC INSIDE THIS IF self.isNode is True,
             if self.isNode is True:
                 print("Building Nodes")
                 # build parent chunks via NodeParser
@@ -228,6 +228,8 @@ class LlamaIndex:
             print(
                 f"collection {collection_name} is already populated. Loading index from vector store..."
             )
+
+            print(self.documents[:5])
             # Load the existing index from the vector store
             vector_store = ChromaVectorStore(chroma_collection=self.chroma_collection)
             storage_context = StorageContext.from_defaults(vector_store=vector_store)
